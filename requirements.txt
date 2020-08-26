@@ -1,0 +1,9 @@
+cmf==2.0.0b4
+wheel
+numpy
+spotpy
+netcdf4
+pandas
+mpi4py
+scipy
+matplotlib
