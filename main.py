@@ -1,17 +1,17 @@
-# This is a sample Python script.
+# -*- coding: utf-8 -*-
+"""
+Created in Aug 2020
 
-# I will use this script to create the model (based on the functions from build_the_model.py) and run it (via run.py)
+The aim of this script is to run the model in different ways:
+a) single run with water (DONE)
+b) single run with phosphorus (DONE)
+c) spotpy with water (DONE)
+d) spotpy with phosphorus (TODO)
+e) validation of water and phosphorus routines (TODO)
 
-# Additional water_params:
-# k, n und alpha werden IMMER mittels Spotpy bestimmt (für Ah, Bv1 und Bv2), insofern based_on_spotpy == True
-# (in build_the_model.create_layers())
-# v0 can be deleted
+@author: pferdmenges-j
+"""
 
-# Was ich will: Dieses Skript soll funktionieren mit
-# a) Single run mit Wasser,
-# b) Single run mit Phosphor,
-# c) Spotpy mit Wasser,
-# d) Spotpy mit Phosphor (und vielleicht Validierung?)
 
 import os
 import parallel_processing

@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+Created in Aug 2020
+
+This file holds functions for reading input data, writing output data, and edit dataframes.
+
+@author: pferdmenges-j
+"""
+
 import cmf
 import pandas as pd
 from pathlib import Path
@@ -116,7 +125,7 @@ def evaluation_water_df(source=Path('input/MIT_Evaluation.csv'), irrigation=Fals
 def evaluation_phosphorus_df(evaluation):
     """
     Reading evaluation file and add states (=total amounts) of DIP, DOP and PP for lysimeter samples.
-    All concentrations are in microgram per L, and all states are in microgram!
+    All concentrations are in micrograms per L, and all states are in micrograms!
     Careful: Results from CMF are AMOUNT/m3, so they need to be converted
     """
     evaluation.rename(columns={'DIP [mcg/l]': 'dip_measured_mcg_per_L', 'DOP [mcg/l]': 'dop_measured_mcg_per_L',
@@ -206,4 +215,3 @@ def format_phosphorus_results(model, phosphorus_results):
     :return:
     """
     pass
-

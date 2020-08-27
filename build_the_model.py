@@ -2,11 +2,11 @@
 """
 Created in August 2020
 
+This script will be used to build the model. It will provide functions for the different setup options and so on.
+In main.py, the model will be created by choosing from the options given here.
+
 @author: pferdmenges-j
 """
-
-# This script will be used to build the model. It will provide functions for the different setup options and so on
-# in main.py, the model will be created by choosing from the options given here.
 
 import cmf
 import numpy as np
@@ -23,10 +23,7 @@ class BypassFastFlow:
         from the surface to every soil layer.
 
         :param model: the CmfModel object.
-        :param porefraction_mp: dummy parameter, not needed
         :param ksat_mp: the saturated conductivity of the bypass components in m/day.
-        :param density_mp: dummy parameter, not needed
-        :param connection: dummy parameter, not needed
         """
         self.bypass = []
         for i in model.c.layers:
@@ -65,7 +62,8 @@ class MacroporeFastFlow:
     def __init__(self, model, porefraction_mp, ksat_mp, density_mp, k_shape):
 
         """
-        Creation of macropores, which are connected to every layer (mp_exchange between layer and corresponding macropore).
+        Creation of macropores, which are connected to every layer
+        (mp_exchange between layer and corresponding macropore).
 
         :param model: the CmfModel object.
         :param porefraction_mp: the fraction of the macropores in m3/m3. This adds to the porosity of the layer.
@@ -102,10 +100,7 @@ class CmfModel(cmf.project):
     A model for studying the influence of different fast flow components (none, bypass, direct routing, and macropores)
     for water fluxes and phosphorus components (colloidal P and dissolved P)
     """
-    # TODO 1: Check adsorption: is it okay to use LinearAdsorption? Or should I create a equilibrium between DIP,
-    #  DOP and PP?
-    # TODO 2: CHECK FOR UNITS! Input is in mcg/L, I change it to mcg/m3 - Do I forget it somewhere?
-    #  (see p_input.format_solutes_for_evaluation)
+    # TODO: Check adsorption: use LinearAdsorption? Or should I create a equilibrium between DIP, DOP and PP?
 
     def __init__(self, water_params=None,
                  phosphorus_params=None,
@@ -261,9 +256,6 @@ class CmfModel(cmf.project):
         """
         If a topographic slope exists surface water can runoff to another outlet.
         https://philippkraft.github.io/cmf/cmf_tut_kinematic_wave.html
-
-        :param manning_n: Manning roughness coefficient
-        :param slope: slope from cell center to outlet
         """
         surface_outlet = self.NewOutlet('surface', self.c.x - 0.5, self.c.y - 0.5, self.c.z - 0.5)
 
@@ -278,7 +270,7 @@ class CmfModel(cmf.project):
         Creates a cmf.RainfallStation from a list of rainfall data and sets concentration of Pd and Pc
         according to mean concentration in surfacewater at MIT (this might need editing!)
         :param rain: cmf.timeseries, containing rain data
-        :return: a cmf.RainfalLStation
+        :return: a cmf.RainfallStation
         """
         rain_station = self.rainfall_stations.add(Name='pot', Data=rain, Position=(0, 0, 0))
         rain_station.use_for_cell(self.c)

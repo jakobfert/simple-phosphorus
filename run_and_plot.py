@@ -1,19 +1,16 @@
-# This file will hold functions to run the script and to plot the results
-
-
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun  4 16:39:50 2019
+Created in Aug 2020
+
+This file will hold functions to run the script and to plot the results
 
 @author: pferdmenges-j
 """
 
 import cmf
 import numpy as np
-import pandas as pd
 import time
 from build_the_model import CmfModel, MacroporeFastFlow, BypassFastFlow
-from operator import add
 
 
 def create_water_result_df():
@@ -61,7 +58,7 @@ def amount_per_m3_to_amount_per_l(amount_per_m3):
     return amount_per_m3 * 1e-3
 
 
-def fill_water_result_df(model: CmfModel, df, i, t):
+def fill_water_result_df(model: CmfModel, df, t):
     """
     Function which is called each time step of solute_results to add values to df
 
@@ -102,7 +99,7 @@ def fill_water_result_df(model: CmfModel, df, i, t):
         df['simulated_flux_l_per_m2_per_day'][tstr] = model.c.layers.get_percolation(t).tolist()
 
 
-def fill_phosphorus_result_df(model: CmfModel, x_solutes, i, t):
+def fill_phosphorus_result_df(model: CmfModel, x_solutes, t):
     """
     Function which is called each time step of solute_results to add values to df
     :param model: CmfModel
@@ -168,12 +165,13 @@ def run(model: CmfModel, print_time=False):
         if print_time:
             print(t)
 
-        fill_water_result_df(model, water_results, i, t)
+        fill_water_result_df(model, water_results, t)
         if model.solutes:
-            fill_phosphorus_result_df(model, phosphorus_results, i, t)
+            fill_phosphorus_result_df(model, phosphorus_results, t)
         i += 1
 
     end_timestamp = time.time()
-    print('Run time: ', (end_timestamp - start_timestamp) / 60, ' min')
+    if print_time:
+        print('Run time: ', (end_timestamp - start_timestamp) / 60, ' min')
 
     return water_results, phosphorus_results
