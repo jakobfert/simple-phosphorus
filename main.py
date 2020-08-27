@@ -118,11 +118,11 @@ class SpotpyInterface:
                                  doc='saturated conductivity of bv1 layer in matrix [m/day]'),
                                u(name='ksat_mx_bv2', low=0.1, high=20, default=5,
                                  doc='saturated conductivity of bv2 layer in matrix [m/day]'),
-                               u(name='n_ah', low=0.8, high=3.6, default=1.211,
+                               u(name='n_ah', low=1.0, high=3.6, default=1.211,
                                  doc='VanGenuchtenMualem parameter n of ah layer in matrix [m/day]'),
-                               u(name='n_bv1', low=0.8, high=3.6, default=1.211,
+                               u(name='n_bv1', low=1.0, high=3.6, default=1.211,
                                  doc='VanGenuchtenMualem parameter n of bv1 layer in matrix [m/day]'),
-                               u(name='n_bv2', low=0.8, high=3.6, default=1.211,
+                               u(name='n_bv2', low=1.0, high=3.6, default=1.211,
                                  doc='VanGenuchtenMualem parameter n of bv2 layer in matrix [m/day]'),
                                u(name='alpha_ah', low=0, high=1, default=0.2178,
                                  doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [m/day]'),
@@ -179,16 +179,7 @@ class SpotpyInterface:
             phosphorus_params = None
             water_params = vector
 
-        self.project = CmfModel(water_params=water_params,
-                                phosphorus_params=phosphorus_params,
-                                spotpy_soil_params=self.spotpy_soil_params,
-                                irrigation=self.irrigation,
-                                profile=self.profile,
-                                fast_component=self.flow_approach,
-                                tracer=self.tracer,
-                                begin=self.begin,
-                                cell=(0, 0, 0, 1000, True),  # IMPORTANT: now the area is 1000 m2
-                                surface_runoff=True)
+        return phosphorus_params, water_params
 
     def simulation(self, vector):
         """
@@ -201,10 +192,26 @@ class SpotpyInterface:
         empty_list = [list(empty_list), list(empty_list)]
 
         try:
-            self.set_parameters(vector)
+            phosphorus_params, water_params = self.set_parameters(vector)
         except:
             print('Parameter Error')
             iao.append_error_file(spotpy=vector, name=self.error_file, error='ParameterError')
+            return empty_list
+
+        try:
+            self.project = CmfModel(water_params=water_params,
+                                    phosphorus_params=phosphorus_params,
+                                    spotpy_soil_params=self.spotpy_soil_params,
+                                    irrigation=self.irrigation,
+                                    profile=self.profile,
+                                    fast_component=self.flow_approach,
+                                    tracer=self.tracer,
+                                    begin=self.begin,
+                                    cell=(0, 0, 0, 1000, True),  # IMPORTANT: now the area is 1000 m2
+                                    surface_runoff=True)
+        except:
+            print('Setup Error')
+            iao.append_error_file(spotpy=vector, name=self.error_file, error='Setup')
             return empty_list
 
         try:
