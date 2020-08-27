@@ -12,6 +12,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import statistics
+import csv
 
 
 # ------------------------------------------- READ DATA -------------------------------------------
@@ -215,3 +216,24 @@ def format_phosphorus_results(model, phosphorus_results):
     :return:
     """
     pass
+
+
+# ------------------------------------------- ERROR FILE -------------------------------------------
+def write_error_file(spotpy, name='error.csv'):
+    param_list = ['reason', 'time_step']
+    for i in spotpy:
+        param_list.append(i.name)
+
+    with open(name, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(param_list)
+
+
+def append_error_file(spotpy, name='error.csv', mode='a', error='IndistinctError', time_step='-'):
+    param_list = [error, time_step]
+    for i in list(vars(spotpy).values())[1]:
+        param_list.append(i[0])
+
+    with open(name, mode=mode, newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(param_list)

@@ -70,16 +70,20 @@ class SpotpyInterface:
 
         self.evaluation_df = iao.evaluation_water_df(source=Path('input/MIT_Evaluation.csv'),
                                                      irrigation=self.irrigation, profile=self.profile)
+        self.error_file = Path('results/LHS_FF' + str(self.flow_approach) + '_P' + str(self.profile) + '_errors.csv')
+
         if self.mode == 'phosphorus':
             self.phosphorus_params = self.create_phosphorus_parameters()
             self.water_params = WaterParameters(spotpy_set=self.spotpy_set,
                                                 spotpy_soil_params=self.spotpy_soil_params,
                                                 system=self.flow_approach)
+            iao.write_error_file(spotpy=self.phosphorus_params, name=self.error_file)
             self.evaluation_df = iao.evaluation_phosphorus_df(self.evaluation_df)
             self.tracer = 'dip dop pp'
         else:
             self.water_params = self.create_water_parameters()
             self.phosphorus_params = None
+            iao.write_error_file(spotpy=self.water_params, name=self.error_file)
             self.tracer = ''
 
         self.sim_stop = max(self.evaluation_df['time [min]'])  # time when last measurement was taken (min after start)
@@ -200,6 +204,7 @@ class SpotpyInterface:
             self.set_parameters(vector)
         except:
             print('Parameter Error')
+            iao.append_error_file(spotpy=vector, name=self.error_file, error='ParameterError')
             return empty_list
 
         try:
@@ -222,6 +227,7 @@ class SpotpyInterface:
                         list(simulation['amount_simulated_l_per_m2'])]
         except:  # RuntimeError:
             print('CVode Error')
+            iao.append_error_file(spotpy=vector, name=self.error_file, error='CVodeError')
             return empty_list
 
     def evaluation(self):
@@ -266,7 +272,7 @@ class WaterParameters:
         Here, spotpy parameters are extracted from a row of spotpy results. These parameters then are used to create a
         new model
         :param spotpy_set: row of spotpy results
-        :param flow_approach: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
+        :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
         self.saturated_depth = spotpy_set.parsaturated_depth if spotpy_set else 4.76
         self.puddle_depth = spotpy_set.parpuddle_depth if spotpy_set else 0.004276
@@ -303,7 +309,7 @@ class PhosphorusParameters:
         Here, spotpy parameters are extracted from a row of spotpy results. These parameters then are used to create a
         new model
         :param spotpy_set: row of spotpy results
-        :param flow_approach: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
+        :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
         self.dip_state = spotpy_set.pardip_state if spotpy_set else 10
         self.dop_state = spotpy_set.pardop_state if spotpy_set else 10
@@ -354,11 +360,11 @@ if __name__ == '__main__':
         runs = int(sys.argv[4])
 
     dbname = 'results/LHS'
-    modus = 'water'  # 'water' or 'phosphorus'
+    water_or_phosphorus = 'water'  # 'water' or 'phosphorus'
     use_spotpy = True
 
     setup = SpotpyInterface(spotpy_set=None, spotpy_soil_params=True,
-                            irrigation=irr, profile=prof, flow_approach=fastflow, mode=modus)
+                            irrigation=irr, profile=prof, flow_approach=fastflow, mode=water_or_phosphorus)
 
     if use_spotpy:
         sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
