@@ -10,7 +10,6 @@ Created on Tue Jun  4 16:39:50 2019
 
 import cmf
 import numpy as np
-import xarray as xr
 import pandas as pd
 import time
 from build_the_model import CmfModel, MacroporeFastFlow, BypassFastFlow
