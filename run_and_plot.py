@@ -93,8 +93,8 @@ def fill_water_result_df(model: CmfModel, df, t):
             model.flow_approach.bypass[i].right_node(), t) for i in range(len(model.flow_approach.bypass))]
 
     if type(model.flow_approach) == MacroporeFastFlow or type(model.flow_approach) == BypassFastFlow:
-        df['simulated_flux_l_per_m2_per_day'][tstr] = np.add(model.c.layers.get_percolation(t),
-                                                             model.flow_approach.macropores.percolation(t)).tolist()
+        df['simulated_flux_l_per_m2_per_day'][tstr] = np.add(df['percolation_l_per_m2_per_day_mx'][tstr],
+                                                             df['percolation_l_per_m2_per_day_mp'][tstr])
     else:
         df['simulated_flux_l_per_m2_per_day'][tstr] = model.c.layers.get_percolation(t).tolist()
 
