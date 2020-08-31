@@ -71,18 +71,201 @@ def u(name, low, high, default=None, doc=None):
     return spotpy.parameter.Uniform(name, low, high, optguess=default, doc=doc)
 
 
+def create_spotpy_water_parameters(vgm_via_spotpy=True, system=1):
+    """
+    Here, spotpy parameters for simulation of phosphorus are created.
+    All states are in micrograms! Filter: 1: solute can cross barrier completely; 0: no solute is crossing
+    """
+    param_list = [u(name='saturated_depth', low=1.0, high=10.0, default=4.5, doc='saturated depth at beginning'),
+                  u(name='puddle_depth', low=0.0, high=0.01, default=0.002,
+                    doc='water depth at which runoff starts [m]'),
+                  u(name='porosity_mx_ah', low=0.001, high=0.9, default=0.1,
+                    doc='porosity of matrix [m3 Pores / m3 Soil]'),
+                  u(name='porosity_mx_bv1', low=0.001, high=0.9, default=0.1,
+                    doc='porosity of matrix [m3 Pores / m3 Soil]'),
+                  u(name='porosity_mx_bv2', low=0.001, high=0.9, default=0.1,
+                    doc='porosity of matrix [m3 Pores / m3 Soil]'),
+                  u(name='w0_ah', low=0.8, high=1.0, default=0.99,
+                    doc='VanGenuchtenMualem parameter w0, first layer'),
+                  u(name='w0_bv1', low=0.8, high=1.0, default=0.99,
+                    doc='VanGenuchtenMualem parameter w0, deepest layer'),
+                  u(name='w0_bv2', low=0.8, high=1.0, default=0.99,
+                    doc='VanGenuchtenMualem parameter w0, deepest layer')]
+
+    if vgm_via_spotpy:
+        # value ranges for n and alpha follow http://www.international-agrophysics.org/Relationship-between-van-
+        # Genuchten-s-parameters-of-the-retention-curve-equation-nand,106597,0,2.html
+        param_list.extend([u(name='ksat_mx_ah', low=0.1, high=20, default=5,
+                             doc='saturated conductivity of ah layer in matrix [m/day]'),
+                           u(name='ksat_mx_bv1', low=0.1, high=20, default=5,
+                             doc='saturated conductivity of bv1 layer in matrix [m/day]'),
+                           u(name='ksat_mx_bv2', low=0.1, high=20, default=5,
+                             doc='saturated conductivity of bv2 layer in matrix [m/day]'),
+                           u(name='n_ah', low=1.0, high=3.6, default=1.211,
+                             doc='VanGenuchtenMualem parameter n of ah layer in matrix [m/day]'),
+                           u(name='n_bv1', low=1.0, high=3.6, default=1.211,
+                             doc='VanGenuchtenMualem parameter n of bv1 layer in matrix [m/day]'),
+                           u(name='n_bv2', low=1.0, high=3.6, default=1.211,
+                             doc='VanGenuchtenMualem parameter n of bv2 layer in matrix [m/day]'),
+                           u(name='alpha_ah', low=0, high=1, default=0.2178,
+                             doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [m/day]'),
+                           u(name='alpha_bv1', low=0, high=1, default=0.2178,
+                             doc='VanGenuchtenMualem parameter alpha of bv1 layer in matrix [m/day]'),
+                           u(name='alpha_bv2', low=0, high=1, default=0.2178,
+                             doc='VanGenuchtenMualem parameter alpha of bv2 layer in matrix [m/day]')
+                           ])
+
+    if system == 2:
+        param_list.append(
+            u(name='ksat_mp', low=1, high=240, default=10, doc='saturated conductivity of macropores [m/day]'))
+    elif system == 3:
+        param_list.extend(
+            [u(name='ksat_mp', low=1, high=240, default=10, doc='saturated conductivity of macropores [m/day]'),
+             u(name='porefraction_mp', low=0.1, high=1.0, default=0.2, doc='macropore fraction [m3/m3]'),
+             u(name='density_mp', low=0.001, high=1.0, default=0.05,
+               doc='mean distance between the macropores [m]'),
+             u(name='k_shape', low=0.0, high=1.0, default=0.0,
+               doc='the shape of the conductivity in relation to the matric '
+                   'potential of the micropore flow_approach')])
+
+    return param_list
+
+
+def create_spotpy_phosphorus_parameters(system=1):
+    param_list = [u(name='dip_state', low=0, high=1000, default=10, doc='state of DIP'),
+                  u(name='dop_state', low=0, high=1000, default=10, doc='state of DOP'),
+                  u(name='pp_state', low=0, high=1000, default=10, doc='state of PP'),
+                  u(name='mx_filter_dp', low=0, high=1, default=1, doc='Filter for DIP + DOP in matrix'),
+                  u(name='mx_filter_pp', low=0, high=1, default=0.1, doc='Filter for PP in matrix')]
+    if system == 2 or system == 3:
+        param_list.extend([u(name='mp_filter_dp', low=0, high=1, default=1,
+                             doc='Filter for DIP + DOP in macropores/bypass'),
+                           u(name='mp_filter_pp', low=0, high=1, default=0.8,
+                             doc='Filter for PP in macropores/bypass')])
+    if system == 3:
+        param_list.extend([u(name='exch_filter_dp', low=0, high=1, default=1,
+                             doc='exchange of DIP and DOP between matrix and macropores'),
+                           u(name='exch_filter_pp', low=0, high=1, default=0.8,
+                             doc='exchange of PP between matrix and macropores')])
+    return param_list
+
+
+def set_parameters():
+    if water_or_phosphorus == 'water':
+        phosphorus = None
+        if use_spotpy:
+            water = create_spotpy_water_parameters(vgm_via_spotpy=vgm_params_via_spotpy, system=fastflow)
+        else:
+            if w_params_from_file:
+                save_file = Path('results/SELECTION_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                if save_file.exists():
+                    database = pd.read_csv(save_file, sep=',', decimal='.', engine='python', header=0)
+                else:
+                    database = ParameterFromFile(name=dbname + '.csv', method='percentage', value=0.01,
+                                                 save_under=save_file)
+                    database = database.df
+
+                index_w = int(sys.argv[5]) if len(sys.argv) == 6 else 0
+                water = WaterParameters(spotpy_set=database.iloc[[index_w]],
+                                           spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+            else:
+                water = WaterParameters(spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+
+    else:  # should be 'phosphorus'
+        if use_spotpy:
+            phosphorus = create_spotpy_phosphorus_parameters(system=fastflow)
+            if w_params_from_file:
+                save_file = Path(
+                    'results/SELECTION_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                if save_file.exists():
+                    database = pd.read_csv(save_file, sep=',', decimal='.', engine='python', header=0)
+                else:
+                    database = ParameterFromFile(name='results/LHS_water_FF' + str(fastflow) + '_P' + str(prof) +
+                                                      '.csv', method='percentage', value=0.01,
+                                                 save_under=save_file)
+                    database = database.df
+
+                index_w = int(sys.argv[5]) if len(sys.argv) == 6 else 0
+                water = WaterParameters(spotpy_set=database.iloc[[index_w]],
+                                           spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+            else:
+                water = WaterParameters(spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+        else:
+            if w_params_from_file and p_params_from_file:
+                save_w_file = Path(
+                    'results/SELECTION_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                save_p_file = Path(
+                    'results/SELECTION_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                if save_w_file.exists():
+                    database_w = pd.read_csv(save_w_file, sep=',', decimal='.', engine='python', header=0)
+                else:
+                    database_w = ParameterFromFile(name='results/LHS_water_FF' + str(fastflow) + '_P' + str(prof) +
+                                                        '.csv', method='percentage', value=0.01,
+                                                   save_under=save_w_file)
+                    database_w = database_w.df
+
+                if save_p_file.exists():
+                    database_p = pd.read_csv(save_p_file, sep=',', decimal='.', engine='python', header=0)
+                else:
+                    database_p = ParameterFromFile(name=dbname + '.csv', method='percentage', value=0.01,
+                                                   save_under=save_w_file)
+                    database_p = database_p.df
+
+                index_w = int(sys.argv[5]) if len(sys.argv) == 7 else 0
+                index_p = int(sys.argv[6]) if len(sys.argv) == 7 else 0
+
+                water = WaterParameters(spotpy_set=database_w.iloc[[index_w]],
+                                           spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+                phosphorus = PhosphorusParameters(spotpy_set=database_w.iloc[[index_w]], system=fastflow)
+            elif not w_params_from_file and not p_params_from_file:
+                water = WaterParameters(spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+                phosphorus = PhosphorusParameters(system=fastflow)
+            elif w_params_from_file and not p_params_from_file:
+                save_w_file = Path(
+                    'results/SELECTION_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                if save_w_file.exists():
+                    database_w = pd.read_csv(save_w_file, sep=',', decimal='.', engine='python', header=0)
+                else:
+                    database_w = ParameterFromFile(name='results/LHS_water_FF' + str(fastflow) + '_P' + str(prof) +
+                                                        '.csv', method='percentage', value=0.01,
+                                                   save_under=save_w_file)
+                    database_w = database_w.df
+
+                index_w = int(sys.argv[6]) if len(sys.argv) == 7 else 0
+
+                water = WaterParameters(spotpy_set=database_w.iloc[[index_w]],
+                                           spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+                phosphorus = PhosphorusParameters(system=fastflow)
+            else:
+                save_p_file = Path(
+                    'results/SELECTION_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                if save_p_file.exists():
+                    database_p = pd.read_csv(save_p_file, sep=',', decimal='.', engine='python', header=0)
+                else:
+                    database_p = ParameterFromFile(name=dbname + '.csv', method='percentage', value=0.01,
+                                                   save_under=save_p_file)
+                    database_p = database_p.df
+
+                index_p = int(sys.argv[6]) if len(sys.argv) == 7 else 0
+
+                phosphorus = PhosphorusParameters(spotpy_set=database_p.iloc[[index_p]], system=fastflow)
+                water = WaterParameters(spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+
+    return water, phosphorus
+
+
 class ModelInterface:
     """
     Class to create a CmfModel and run it via Spotpy for calibration
     """
 
-    def __init__(self, spotpy_p_set=None, spotpy_w_set=None, spotpy_soil_params=True,
+    def __init__(self, water_params, phosphorus_params, spotpy_soil_params=True,
                  irrigation=1, profile=1, flow_approach=3, mode='water'):
         self.project = None
         self.mode = mode
         self.flow_approach = flow_approach
-        self.spotpy_p_set = spotpy_p_set
-        self.spotpy_w_set = spotpy_w_set
+        self.water_params = water_params
+        self.phosphorus_params = phosphorus_params
 
         self.irrigation = irrigation
         self.profile = profile
@@ -96,97 +279,14 @@ class ModelInterface:
         self.error_file = Path('results/LHS_FF' + str(self.flow_approach) + '_P' + str(self.profile) + '_errors.csv')
 
         if self.mode == 'phosphorus':
-            # TODO: if self.spotpy_p_set: create_phosphorus_parameters_from_file()
-            #  else: create_phosphorus_parameters()
-            self.phosphorus_params = self.create_phosphorus_parameters() if not self.spotpy_p_set else self.spotpy_p_set
-            self.water_params = self.spotpy_w_set
             iao.write_error_file(spotpy=self.phosphorus_params, name=self.error_file)
             self.evaluation_df = iao.evaluation_phosphorus_df(self.evaluation_df)
             self.tracer = 'dip dop pp'
         else:
-            self.water_params = self.create_water_parameters() if not self.spotpy_w_set else self.spotpy_w_set
-            self.phosphorus_params = None
             iao.write_error_file(spotpy=self.water_params, name=self.error_file)
             self.tracer = ''
 
         self.sim_stop = max(self.evaluation_df['time [min]'])  # time when last measurement was taken (min after start)
-
-    def create_water_parameters(self):
-        """
-        Here, spotpy parameters for simulation of phosphorus are created.
-        All states are in micrograms! Filter: 1: solute can cross barrier completely; 0: no solute is crossing
-        """
-        param_list = [u(name='saturated_depth', low=1.0, high=10.0, default=4.5, doc='saturated depth at beginning'),
-                      u(name='puddle_depth', low=0.0, high=0.01, default=0.002,
-                        doc='water depth at which runoff starts [m]'),
-                      u(name='porosity_mx_ah', low=0.001, high=0.9, default=0.1,
-                        doc='porosity of matrix [m3 Pores / m3 Soil]'),
-                      u(name='porosity_mx_bv1', low=0.001, high=0.9, default=0.1,
-                        doc='porosity of matrix [m3 Pores / m3 Soil]'),
-                      u(name='porosity_mx_bv2', low=0.001, high=0.9, default=0.1,
-                        doc='porosity of matrix [m3 Pores / m3 Soil]'),
-                      u(name='w0_ah', low=0.8, high=1.0, default=0.99,
-                        doc='VanGenuchtenMualem parameter w0, first layer'),
-                      u(name='w0_bv1', low=0.8, high=1.0, default=0.99,
-                        doc='VanGenuchtenMualem parameter w0, deepest layer'),
-                      u(name='w0_bv2', low=0.8, high=1.0, default=0.99,
-                        doc='VanGenuchtenMualem parameter w0, deepest layer')]
-
-        if self.spotpy_soil_params:
-            # value ranges for n and alpha follow http://www.international-agrophysics.org/Relationship-between-van-
-            # Genuchten-s-parameters-of-the-retention-curve-equation-nand,106597,0,2.html
-            param_list.extend([u(name='ksat_mx_ah', low=0.1, high=20, default=5,
-                                 doc='saturated conductivity of ah layer in matrix [m/day]'),
-                               u(name='ksat_mx_bv1', low=0.1, high=20, default=5,
-                                 doc='saturated conductivity of bv1 layer in matrix [m/day]'),
-                               u(name='ksat_mx_bv2', low=0.1, high=20, default=5,
-                                 doc='saturated conductivity of bv2 layer in matrix [m/day]'),
-                               u(name='n_ah', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of ah layer in matrix [m/day]'),
-                               u(name='n_bv1', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of bv1 layer in matrix [m/day]'),
-                               u(name='n_bv2', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of bv2 layer in matrix [m/day]'),
-                               u(name='alpha_ah', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [m/day]'),
-                               u(name='alpha_bv1', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of bv1 layer in matrix [m/day]'),
-                               u(name='alpha_bv2', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of bv2 layer in matrix [m/day]')
-                               ])
-
-        if self.flow_approach == 2:
-            param_list.append(
-                u(name='ksat_mp', low=1, high=240, default=10, doc='saturated conductivity of macropores [m/day]'))
-        elif self.flow_approach == 3:
-            param_list.extend(
-                [u(name='ksat_mp', low=1, high=240, default=10, doc='saturated conductivity of macropores [m/day]'),
-                 u(name='porefraction_mp', low=0.1, high=1.0, default=0.2, doc='macropore fraction [m3/m3]'),
-                 u(name='density_mp', low=0.001, high=1.0, default=0.05,
-                   doc='mean distance between the macropores [m]'),
-                 u(name='k_shape', low=0.0, high=1.0, default=0.0,
-                   doc='the shape of the conductivity in relation to the matric '
-                       'potential of the micropore flow_approach')])
-
-        return param_list
-
-    def create_phosphorus_parameters(self):
-        param_list = [spotpy.parameter.Uniform('dip_state', 0, 1000, optguess=10, doc='state of DIP'),
-                      spotpy.parameter.Uniform('dop_state', 0, 1000, optguess=10, doc='state of DOP'),
-                      spotpy.parameter.Uniform('pp_state', 0, 1000, optguess=10, doc='state of PP'),
-                      spotpy.parameter.Uniform('mx_filter_dp', 0, 1, optguess=1, doc='Filter for DIP + DOP in matrix'),
-                      spotpy.parameter.Uniform('mx_filter_pp', 0, 1, optguess=0.1, doc='Filter for PP in matrix')]
-        if self.flow_approach == 2 or self.flow_approach == 3:
-            param_list.extend([spotpy.parameter.Uniform('mp_filter_dp', 0, 1, optguess=1,
-                                                        doc='Filter for DIP + DOP in macropores/bypass'),
-                               spotpy.parameter.Uniform('mp_filter_pp', 0, 1, optguess=0.8,
-                                                        doc='Filter for PP in macropores/bypass')])
-        if self.flow_approach == 3:
-            param_list.extend([spotpy.parameter.Uniform('exch_filter_dp', 0, 1, optguess=1,
-                                                        doc='exchange of DIP and DOP between matrix and macropores'),
-                               spotpy.parameter.Uniform('exch_filter_pp', 0, 1, optguess=0.8,
-                                                        doc='exchange of PP between matrix and macropores')])
-        return param_list
 
     def parameters(self):
         if self.mode == 'phosphorus':
@@ -415,12 +515,6 @@ class ParameterFromFile:
 
 class SingleRun:
     def __init__(self, init):
-        if init.mode == 'phosphorus':
-            init.phosphorus_params = PhosphorusParameters(spotpy_set=init.spotpy_p_set, system=init.flow_approach)
-        else:
-            init.water_params = WaterParameters(spotpy_set=init.spotpy_w_set, spotpy_soil_params=init.spotpy_soil_params,
-                                                system=init.flow_approach)
-
         init.project = CmfModel(water_params=init.water_params,
                                 phosphorus_params=init.phosphorus_params,
                                 spotpy_soil_params=init.spotpy_soil_params,
@@ -450,42 +544,13 @@ if __name__ == '__main__':
     water_or_phosphorus = 'water'  # 'water' or 'phosphorus'
     dbname = 'results/LHS_' + water_or_phosphorus + '_FF' + str(fastflow) + '_P' + str(prof)
     vgm_params_via_spotpy = True
-    use_spotpy = True
-    params_from_file = False
+    use_spotpy = False
+    w_params_from_file = False
+    p_params_from_file = False
 
-    if params_from_file:
-        # IMPORTANT: I always pass only 1 index, so the model will run with just one parameter set. For iteration over
-        # a whole file it is necessary to use a loop inside a shell-script. It is not possible to use the spotpy
-        # function for given parameter sets, since then it needs to run via MC algorithm - this is no option if you use
-        # water params from a file for calibration of phosphorus params via spotpy
+    w_params, p_params = set_parameters()
 
-        # IMPORTANT 2: for calibration of phosphorus parameters, water parameters are ALWAYS taken from a file. When
-        # this is the case, params_from_file should be FALSE. When params_from_file is True, BOTH parameter sets are
-        # taken from a file!
-        save_file = Path('results/SELECTION_' + water_or_phosphorus + '_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
-
-        if save_file.exists():
-            database = pd.read_csv(save_file, sep=',', decimal='.', engine='python', header=0)
-        else:
-            database = ParameterFromFile(name=dbname+'.csv', method='percentage', value=0.01, save_under=save_file)
-            database = database.df
-
-        if water_or_phosphorus == 'water':
-            index_w = int(sys.argv[5]) if len(sys.argv) == 6 else 0
-            determined_w_params = WaterParameters(spotpy_set=database.iloc[[index_w]],
-                                                  spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
-            determined_p_params = None
-        else:
-            index_w = int(sys.argv[5]) if len(sys.argv) == 7 else 0
-            index_p = int(sys.argv[6]) if len(sys.argv) == 7 else 0
-            determined_w_params = WaterParameters(spotpy_set=database.iloc[[index_w]],
-                                                  spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
-            determined_p_params = PhosphorusParameters(spotpy_set=database.iloc[[index_p]], system=fastflow)
-    else:
-        determined_p_params = None
-        determined_w_params = None
-
-    setup = ModelInterface(spotpy_p_set=determined_p_params, spotpy_w_set=determined_w_params,
+    setup = ModelInterface(water_params=w_params, phosphorus_params=p_params,
                            spotpy_soil_params=vgm_params_via_spotpy, irrigation=irr, profile=prof,
                            flow_approach=fastflow, mode=water_or_phosphorus)
 
