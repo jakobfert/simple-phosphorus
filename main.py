@@ -9,6 +9,27 @@ c) spotpy with water (DONE)
 d) spotpy with phosphorus (TODO)
 e) validation of water and phosphorus routines (TODO)
 
+TODO: Ich habe gerade das Problem, dass ich die Parameter aus einem File übernehmen will (siehe spotpy_run.py von
+ ptrans). Hier herrscht etwas Chaos, wann ich welche Parameter übergebe: water_params und phosphorus_params werden in
+ ModelInterface erstellt. Für Spotpy werden diese nicht nochmal überschrieben (oder?), also müsste ich eigentlich an
+ dieser Stelle die Sets aus dem File übergeben. Für SingleRun hingegen werden diese (teilweise) überschrieben. Hierfür
+ will ich mir die Möglichkeiten offen halten, die Parameter entweder direkt per Wert festzulegen, oder über ein File.
+ Also muss ich rausfinden, an welcher Stelle und wie ich das am besten mache.
+ Und zur Frage "wie": ist es sinnvoll, eine eigene Klasse dafür zu erstellen (wie bisher angefangen) um so ein bisschen
+ mehr Ordnung zu halten? Da fehlt mir noch die Idee, wie ich das unkompliziert hinkriege. Alternativ könnte ich die
+ Funktionen auch direkt in ModelInterface packen. Das würde die Anwendung vielleicht ein wenig vereinfachen, den Code
+ aber vielleicht unübersichtlicher machen.
+
+TODO: Wenn ich das geschafft habe würde ich mich gerne noch auf Fehlersuche begeben: Es werden immer noch häufig Fehler
+ produziert. Dazu würde ich gerne einige der entsprechenden Datensätze direkt einlesen (über ein File?) und im
+ SingleRun-Mode austesten, ob ich den/die Fehler finde.
+
+TODO: Außerdem werden die letzten Läufe immer extrem langsam. Hierzu habe ich noch zwei Optionen dieses Problem zu
+ untersuchen: zum einen kann ich mich belesen und vielleicht irgendwie austesten, ob der Speicher mit der Zeit vollläuft
+ und wenn ja, wie ich ihn leer kriege. Und zum anderen kann ich doch nochmal schauen, ob ich eine effektivere Zeitsperre
+ in run() reinkriege, sodass WIRKLICH nach z.B. 12 Minuten abgebrochen wird (ohne, dass auf den nächsten Schritt
+ gewartet wird)
+
 @author: pferdmenges-j
 """
 
@@ -20,6 +41,7 @@ import spotpy
 import sys
 from pathlib import Path
 import numpy as np
+import pandas as pd
 from build_the_model import CmfModel
 import input_and_output as iao
 import run_and_plot as rap
@@ -49,17 +71,18 @@ def u(name, low, high, default=None, doc=None):
     return spotpy.parameter.Uniform(name, low, high, optguess=default, doc=doc)
 
 
-class SpotpyInterface:
+class ModelInterface:
     """
     Class to create a CmfModel and run it via Spotpy for calibration
     """
 
-    def __init__(self, spotpy_set=None, spotpy_soil_params=True,
+    def __init__(self, spotpy_p_set=None, spotpy_w_set=None, spotpy_soil_params=True,
                  irrigation=1, profile=1, flow_approach=3, mode='water'):
         self.project = None
         self.mode = mode
         self.flow_approach = flow_approach
-        self.spotpy_set = spotpy_set
+        self.spotpy_p_set = spotpy_p_set
+        self.spotpy_w_set = spotpy_w_set
 
         self.irrigation = irrigation
         self.profile = profile
@@ -73,15 +96,15 @@ class SpotpyInterface:
         self.error_file = Path('results/LHS_FF' + str(self.flow_approach) + '_P' + str(self.profile) + '_errors.csv')
 
         if self.mode == 'phosphorus':
-            self.phosphorus_params = self.create_phosphorus_parameters()
-            self.water_params = WaterParameters(spotpy_set=self.spotpy_set,
-                                                spotpy_soil_params=self.spotpy_soil_params,
-                                                system=self.flow_approach)
+            # TODO: if self.spotpy_p_set: create_phosphorus_parameters_from_file()
+            #  else: create_phosphorus_parameters()
+            self.phosphorus_params = self.create_phosphorus_parameters() if not self.spotpy_p_set else self.spotpy_p_set
+            self.water_params = self.spotpy_w_set
             iao.write_error_file(spotpy=self.phosphorus_params, name=self.error_file)
             self.evaluation_df = iao.evaluation_phosphorus_df(self.evaluation_df)
             self.tracer = 'dip dop pp'
         else:
-            self.water_params = self.create_water_parameters()
+            self.water_params = self.create_water_parameters() if not self.spotpy_w_set else self.spotpy_w_set
             self.phosphorus_params = None
             iao.write_error_file(spotpy=self.water_params, name=self.error_file)
             self.tracer = ''
@@ -332,12 +355,70 @@ class PhosphorusParameters:
             self.exch_filter_pp = spotpy_set.parexch_filter_pp if spotpy_set else 0.8
 
 
+class ParameterFromFile:
+    def __init__(self, name, method, value, save_under):
+        """
+        First reading the csv file containg results from spotpy and sorting it by the objective function;
+        then choosing one of the two rejection approaches
+
+        :param name: name of data file, which will be read and sorted
+        :param method: either 'percentage' or 'threshold' (or 'testing')
+        :param value: when method=='percentage' this should be the proportion; otherwise this should be a threshold
+        """
+
+        self.df = pd.read_csv(name, sep=',', decimal='.', engine='python', header=0)
+        self.df = self.df.sort_values(by=['like1'], ascending=False).reset_index(drop=True)
+
+        if method == 'threshold':
+            self.df = self.model_rejection_by_threshold(self.df, value)
+        elif method == 'percentage':
+            self.df = self.model_rejection_by_percentage(self.df, value)
+        elif method == 'number':
+            self.df = self.model_rejection_by_number(self.df, value)
+
+        self.df.to_csv(save_under)
+
+    def model_rejection_by_percentage(self, df, value=0.01):
+        """
+        Option 1: when for example the best 1 % of the spotpy runs should be used for validation, this function
+        needs to be used.
+
+        :param df: sorted data frame (from read_db())
+        :param value: Proportion of to be selected parameter sets
+        """
+        n = int(len(df.index) * value)
+        df = df.truncate(after=n - 1)  # -1 since we need the index, which starts with 0
+        return df
+
+    def model_rejection_by_threshold(self, df, value=-0.5):
+        """
+        Option 2: when all parameter sets better than a specific threshold should be used for validation, this function
+        needs to be used.
+
+        :param df: sorted data frame (from read_db())
+        :param value: Threshold of the objective value (depending of used objective function)
+        """
+        df = df[df['like1'] > value]
+        return df
+
+    def model_rejection_by_number(self, df, value=10):
+        """
+        Option 3: This function chooses an absolute number of parameter sets. This can be used for testing of the
+        functionality
+
+        :param df: sorted data frame (from read_db())
+        :param value: number of to be chosen parameter sets
+        """
+        df = df.truncate(after=value - 1)  # -1 since we need the index, which starts with 0
+        return df
+
+
 class SingleRun:
     def __init__(self, init):
         if init.mode == 'phosphorus':
-            init.phosphorus_params = PhosphorusParameters(spotpy_set=init.spotpy_set, system=init.flow_approach)
+            init.phosphorus_params = PhosphorusParameters(spotpy_set=init.spotpy_p_set, system=init.flow_approach)
         else:
-            init.water_params = WaterParameters(spotpy_set=init.spotpy_set, spotpy_soil_params=init.spotpy_soil_params,
+            init.water_params = WaterParameters(spotpy_set=init.spotpy_w_set, spotpy_soil_params=init.spotpy_soil_params,
                                                 system=init.flow_approach)
 
         init.project = CmfModel(water_params=init.water_params,
@@ -358,7 +439,7 @@ if __name__ == '__main__':
     if len(sys.argv) != 5:
         irr = 1
         prof = 1
-        fastflow = 3
+        fastflow = 2
         runs = 20
     else:
         irr = int(sys.argv[1])
@@ -366,12 +447,47 @@ if __name__ == '__main__':
         fastflow = int(sys.argv[3])
         runs = int(sys.argv[4])
 
-    dbname = 'results/LHS'
     water_or_phosphorus = 'water'  # 'water' or 'phosphorus'
+    dbname = 'results/LHS_' + water_or_phosphorus + '_FF' + str(fastflow) + '_P' + str(prof)
+    vgm_params_via_spotpy = True
     use_spotpy = True
+    params_from_file = False
 
-    setup = SpotpyInterface(spotpy_set=None, spotpy_soil_params=True,
-                            irrigation=irr, profile=prof, flow_approach=fastflow, mode=water_or_phosphorus)
+    if params_from_file:
+        # IMPORTANT: I always pass only 1 index, so the model will run with just one parameter set. For iteration over
+        # a whole file it is necessary to use a loop inside a shell-script. It is not possible to use the spotpy
+        # function for given parameter sets, since then it needs to run via MC algorithm - this is no option if you use
+        # water params from a file for calibration of phosphorus params via spotpy
+
+        # IMPORTANT 2: for calibration of phosphorus parameters, water parameters are ALWAYS taken from a file. When
+        # this is the case, params_from_file should be FALSE. When params_from_file is True, BOTH parameter sets are
+        # taken from a file!
+        save_file = Path('results/SELECTION_' + water_or_phosphorus + '_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+
+        if save_file.exists():
+            database = pd.read_csv(save_file, sep=',', decimal='.', engine='python', header=0)
+        else:
+            database = ParameterFromFile(name=dbname+'.csv', method='percentage', value=0.01, save_under=save_file)
+            database = database.df
+
+        if water_or_phosphorus == 'water':
+            index_w = int(sys.argv[5]) if len(sys.argv) == 6 else 0
+            determined_w_params = WaterParameters(spotpy_set=database.iloc[[index_w]],
+                                                  spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+            determined_p_params = None
+        else:
+            index_w = int(sys.argv[5]) if len(sys.argv) == 7 else 0
+            index_p = int(sys.argv[6]) if len(sys.argv) == 7 else 0
+            determined_w_params = WaterParameters(spotpy_set=database.iloc[[index_w]],
+                                                  spotpy_soil_params=vgm_params_via_spotpy, system=fastflow)
+            determined_p_params = PhosphorusParameters(spotpy_set=database.iloc[[index_p]], system=fastflow)
+    else:
+        determined_p_params = None
+        determined_w_params = None
+
+    setup = ModelInterface(spotpy_p_set=determined_p_params, spotpy_w_set=determined_w_params,
+                           spotpy_soil_params=vgm_params_via_spotpy, irrigation=irr, profile=prof,
+                           flow_approach=fastflow, mode=water_or_phosphorus)
 
     if use_spotpy:
         sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
