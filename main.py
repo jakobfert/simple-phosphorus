@@ -300,6 +300,10 @@ class ModelInterface:
         :return: list with solute_results results, adjusted to match the evaluation list
         """
         empty_list = [np.nan] * len(self.evaluation_df['amount_measured_absolute'].tolist())
+        if self.mode == 'phosphorus':
+            empty_list = 6 * empty_list
+        else:
+            empty_list = 2 * empty_list
 
         try:
             phosphorus_params, water_params = self.set_parameters(vector)
