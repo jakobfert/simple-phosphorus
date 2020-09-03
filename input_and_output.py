@@ -115,9 +115,9 @@ def evaluation_water_df(source=Path('input/MIT_Evaluation.csv'), irrigation=Fals
     """
     df = read_data(source, irrigation=irrigation, profile=profile, drop=drop)
     df['amount_measured_absolute'] = df['amount [ml]'] / 1000  # this refers to the L per lysimeter
-    df['amount_measured_l_per_m2'] = df['amount_measured_absolute'] / 0.2
-    df['measured_flux_l_per_m2_per_sec'] = df['amount_measured_l_per_m2'] / (df['duration [min]'] * 60)
-    df['measured_flux_l_per_m2_per_day'] = df['measured_flux_l_per_m2_per_sec'] * 60 * 60 * 24
+    df['amount_measured_l_per_m2'] = df['amount_measured_absolute'] / 0.2  # since area of lysimeter is 0.2 m2
+    df['measured_flux_l_per_m2_per_min'] = df['amount_measured_l_per_m2'] / df['duration [min]']
+    df['measured_flux_l_per_m2_per_day'] = df['measured_flux_l_per_m2_per_min'] * 60 * 24
     df['measured_flux_m3_per_m2_per_day'] = df['measured_flux_l_per_m2_per_day'] * 1e-3
     # Important: this still refers to the flux per m2
     return df
@@ -148,14 +148,7 @@ def evaluation_phosphorus_df(evaluation):
 
 
 # ------------------------------------------- FORMAT SIMULATION RESULTS -------------------------------------------
-def format_water_results(approach, water_results):
-    """
-    TEXT
-    :param water_results:
-    :param approach:
-    :return:
-    """
-    # save depth of lysimeters
+def depth_and_layers(approach):
     if approach.profile == 1:
         depth = [0.12, 0.34, 0.68]
     elif approach.profile == 2:
@@ -182,6 +175,27 @@ def format_water_results(approach, water_results):
                 layers.append(number)
         number += 1
 
+    return depth, layers
+
+
+def timespan(begin, row):
+    # time0 and time1 are start and end point of sample -> needed for choosing from simulation results
+    t0 = begin + cmf.min * (int(row['time [min]']) - int(row['duration [min]']))  # start time of sample
+    t1 = begin + cmf.min * (int(row['time [min]']))  # end time of sample
+
+    return t0, t1
+
+
+def format_water_results(approach, water_results):
+    """
+    TEXT
+    :param water_results:
+    :param approach:
+    :return:
+    """
+    # save depth of lysimeters and number of corresponding soil layers:
+    depth, layers = depth_and_layers(approach)
+
     # begin of the irrigation experiment
     begin = cmf.Time(12, 6, 2018, 10, 1)
 
@@ -191,9 +205,7 @@ def format_water_results(approach, water_results):
         # lysimeter; layers[depth.index] uses this index to find the right index of water_results (7,18,28)
         i = layers[depth.index(row['depth [m]'])]
 
-        # time0 and time1 are start and end point of sample -> needed for choosing from simulation results
-        time0 = begin + cmf.min * (int(row['time [min]']) - int(row['duration [min]']))  # start time of sample
-        time1 = begin + cmf.min * (int(row['time [min]']))  # end time of sample
+        time0, time1 = timespan(begin, row)
 
         # mean flux in l per m2 per sec over time period t0:t1:
         mean_for_period = statistics.mean([value[i] for key, value in  # value[i] is the flux in the i-th soil layer
@@ -208,14 +220,37 @@ def format_water_results(approach, water_results):
     return simulation_results
 
 
-def format_phosphorus_results(model, phosphorus_results):
+def format_phosphorus_results(approach, phosphorus_results):
     """
     TEXT
     :param phosphorus_results:
-    :param model:
+    :param approach:
     :return:
     """
-    pass
+    # save depth of lysimeters and number of corresponding soil layers:
+    depth, layers = depth_and_layers(approach)
+    # begin of the irrigation experiment
+    begin = cmf.Time(12, 6, 2018, 10, 1)
+    simulation_results = {'dip_simulated_mcg_per_m3_mx+mp': [], 'dop_simulated_mcg_per_m3_mx+mp': [],
+                          'pp_simulated_mcg_per_m3_mx+mp': [], 'dip_simulated_state_per_m2_mx+mp': [],
+                          'dop_simulated_state_per_m2_mx+mp': [], 'pp_simulated_state_per_m2_mx+mp': []}
+
+    for index, row in approach.evaluation_df.iterrows():
+        i = layers[depth.index(row['depth [m]'])]
+        time0, time1 = timespan(begin, row)
+        for s in approach.project.solutes:
+            mean_for_period = statistics.mean([value[i] for key, value in  # value[i] is the flux in the i-th soil layer
+                                               phosphorus_results[s.Name + '_simulated_mcg_per_m3_mx+mp'].items()
+                                               if time0 <= cmf.Time(datetime.strptime(key, '%d.%m.%Y %H:%M')) < time1])
+            simulation_results[s.Name + '_simulated_mcg_per_m3_mx+mp'].append(mean_for_period)
+
+            sum_for_period = sum([value[i] for key, value in  # value[i] is the flux in the i-th soil layer
+                                  phosphorus_results[s.Name + '_simulated_state_per_m2_mx+mp'].items()
+                                  if time0 <= cmf.Time(datetime.strptime(key, '%d.%m.%Y %H:%M')) < time1])
+            # maybe for testing: concentration * water_amount should be the same
+            simulation_results[s.Name + '_simulated_state_per_m2_mx+mp'].append(sum_for_period)
+
+    return simulation_results
 
 
 # ------------------------------------------- ERROR FILE -------------------------------------------
