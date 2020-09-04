@@ -114,11 +114,11 @@ def model_rejection_by_number(df, value=10):
     return df
 
 
-def create_params_from_file(save_file, method='percentage', value=0.01):
+def create_params_from_file(name, save_file, method='percentage', value=0.01):
     if save_file.exists():
         database = pd.read_csv(save_file, sep=',', decimal='.', engine='python', header=0)
     else:
-        database = model_rejection(name=dbname + '.csv', save_name=save_file, value=value, method=method)
+        database = model_rejection(name=name, save_name=save_file, value=value, method=method)
 
     return database
 
@@ -145,8 +145,9 @@ def water_and_phosphorus():
         if w_params_from_file:  # take parameters from file (by index)
             index = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
             file = Path('results/SELECTION_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+            water_name = 'results/LHS_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
             # IMPORTANT: value should be 0.01 with real dataset, not 0.1!
-            db = create_params_from_file(file, method='percentage', value=0.01)
+            db = create_params_from_file(water_name, file, method='percentage', value=0.01)
             water = WaterParameters(spotpy_set=db.iloc[[index]], spotpy_soil_params=vgm_params_via_spotpy,
                                     system=fastflow)
         else:  # parameters from script
