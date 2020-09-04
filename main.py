@@ -476,7 +476,7 @@ if __name__ == '__main__':
         runs = int(sys.argv[4])
         water_or_phosphorus = str(sys.argv[5])  # 'water' or 'phosphorus'
 
-    dbname = 'results/LHS_' + water_or_phosphorus + '_FF' + str(fastflow) + '_P' + str(prof)
+    dbname = 'results/MC_' + water_or_phosphorus + '_FF' + str(fastflow) + '_P' + str(prof)
     vgm_params_via_spotpy = True
 
     use_spotpy = True
@@ -489,14 +489,15 @@ if __name__ == '__main__':
                            irrigation=irr, profile=prof, flow_approach=fastflow, mode=water_or_phosphorus)
 
     if use_spotpy:
-        sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
+        # sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
+        sampler = spotpy.algorithms.mc(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
         sampler.sample(runs)
 
         eval_list = ModelInterface.evaluation(setup)
         results = sampler.getdata()
         # spotpy.analyser.plot_parametertrace(results, fig_name='LHS_FF' + str(fastflow) + '_P' + str(
         #     prof) + '_parameter_trace.png')
-        spotpy.analyser.plot_bestmodelrun(results, eval_list, fig_name='LHS_FF' + str(fastflow) + '_P' + str(
+        spotpy.analyser.plot_bestmodelrun(results, eval_list, fig_name='MC_FF' + str(fastflow) + '_P' + str(
             prof) + '_best_model_run.png')
     else:
         single_run = SingleRun(setup, water=w_params, phosphorus=p_params)
