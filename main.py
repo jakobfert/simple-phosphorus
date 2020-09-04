@@ -144,8 +144,8 @@ def water_and_phosphorus():
     if water_or_phosphorus == 'phosphorus' or (water_or_phosphorus == 'water' and not use_spotpy):
         if w_params_from_file:  # take parameters from file (by index)
             index = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
-            file = Path('results/SELECTION_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
-            water_name = 'results/LHS_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
+            file = Path('results/SELECTION_MC_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+            water_name = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
             # IMPORTANT: value should be 0.01 with real dataset, not 0.1!
             db = create_params_from_file(water_name, file, method='percentage', value=0.01)
             water = WaterParameters(spotpy_set=db.iloc[[index]], spotpy_soil_params=vgm_params_via_spotpy,
