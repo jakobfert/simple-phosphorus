@@ -490,8 +490,8 @@ if __name__ == '__main__':
         dbname = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof)
     else:
         if w_params_from_file:
-            index = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
-            dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_I' + str(index)
+            appendix = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
+            dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_I' + str(appendix)
         else:
             dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_test'
 
