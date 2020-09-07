@@ -164,7 +164,8 @@ class ModelInterface:
     Class to create a CmfModel and run it via Spotpy for calibration
     """
 
-    def __init__(self, water_params, spotpy_soil_params=True, irrigation=1, profile=1, flow_approach=3, mode='water'):
+    def __init__(self, water_params, spotpy_soil_params=True, irrigation=1, profile=1, flow_approach=3, mode='water',
+                 file_name='results/LHS_FF3_P1_errors'):
         self.project = None
         self.mode = mode
         self.flow_approach = flow_approach
@@ -188,7 +189,8 @@ class ModelInterface:
 
         self.evaluation_df = iao.evaluation_water_df(source=Path('input/MIT_Evaluation.csv'),
                                                      irrigation=self.irrigation, profile=self.profile)
-        self.error_file = Path('results/LHS_FF' + str(self.flow_approach) + '_P' + str(self.profile) + '_errors.csv')
+
+        self.error_file = Path(file_name + '.csv')
 
         if self.mode == 'phosphorus':
             iao.write_error_file(spotpy=self.phosphorus_params, name=self.error_file)
@@ -484,19 +486,20 @@ if __name__ == '__main__':
 
     w_params, p_params = water_and_phosphorus()
 
+    if water_or_phosphorus == 'water':
+        dbname = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof)
+    else:
+        if w_params_from_file:
+            index = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
+            dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_I' + str(index)
+        else:
+            dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_test'
+
     setup = ModelInterface(water_params=w_params, spotpy_soil_params=vgm_params_via_spotpy,
-                           irrigation=irr, profile=prof, flow_approach=fastflow, mode=water_or_phosphorus)
+                           irrigation=irr, profile=prof, flow_approach=fastflow, mode=water_or_phosphorus,
+                           file_name=dbname)
 
     if use_spotpy:
-        if water_or_phosphorus == 'water':
-            dbname = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof)
-        else:
-            if w_params_from_file:
-                index = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
-                dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_I' + str(index)
-            else:
-                dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_test'
-
         # sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
         sampler = spotpy.algorithms.mc(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
         sampler.sample(runs)
