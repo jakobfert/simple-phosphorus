@@ -165,7 +165,7 @@ class ModelInterface:
     """
 
     def __init__(self, water_params, spotpy_soil_params=True, irrigation=1, profile=1, flow_approach=3, mode='water',
-                 file_name='results/LHS_FF3_P1_errors'):
+                 file_name='results/LHS_FF3_P1'):
         self.project = None
         self.mode = mode
         self.flow_approach = flow_approach
@@ -190,7 +190,7 @@ class ModelInterface:
         self.evaluation_df = iao.evaluation_water_df(source=Path('input/MIT_Evaluation.csv'),
                                                      irrigation=self.irrigation, profile=self.profile)
 
-        self.error_file = Path(file_name + '.csv')
+        self.error_file = Path(file_name + '_errors.csv')
 
         if self.mode == 'phosphorus':
             iao.write_error_file(spotpy=self.phosphorus_params, name=self.error_file)
