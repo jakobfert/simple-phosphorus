@@ -11,6 +11,9 @@ import cmf
 import numpy as np
 import time
 from build_the_model import CmfModel, MacroporeFastFlow, BypassFastFlow
+import input_and_output as iao
+import matplotlib.pyplot as plt
+from spotpy.objectivefunctions import rrmse
 
 
 def create_water_result_df():
@@ -48,17 +51,6 @@ def create_phosphorus_result_df(model: CmfModel):
                            s.Name + '_simulated_mcg_per_m3_mx+mp': {},
                            s.Name + '_simulated_state_per_m2_mx+mp': {}})
     return phosphorus
-
-
-def amount_per_m3_to_amount_per_l(amount_per_m3):
-    """
-    Since volumes are always in m3 by default, but evaluation data is in L minute,
-    this function re-calculates the fluxes in L/min
-
-    :param amount_per_m3: concentration in amount per m3
-    :return: concentration of solute in amount per L
-    """
-    return amount_per_m3 * 1e-3
 
 
 def fill_water_result_df(model: CmfModel, df, t):
@@ -209,3 +201,70 @@ def run(model: CmfModel, print_time=False):
         print('Run time: ', (end_timestamp - start_timestamp) / 60, ' min')
 
     return water_results, phosphorus_results
+
+
+def plotting(model, results):
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
+
+    if model.mode == 'phosphorus':
+        simulation = iao.format_phosphorus_results(model, results.phosphorus_results)
+        sim1 = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
+                simulation['pp_simulated_mcg_per_m3_mx+mp'])
+        sim2 = (simulation['dip_simulated_state_per_m2_mx+mp'] + simulation['dop_simulated_state_per_m2_mx+mp'] +
+                simulation['pp_simulated_state_per_m2_mx+mp'])
+
+        sim_total = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
+                     simulation['pp_simulated_mcg_per_m3_mx+mp'] + simulation['dip_simulated_state_per_m2_mx+mp'] +
+                     simulation['dop_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
+
+        eval1 = (list(model.evaluation_df['dip_measured_mcg_per_m3']) +
+                 list(model.evaluation_df['dop_measured_mcg_per_m3']) +
+                 list(model.evaluation_df['pp_measured_mcg_per_m3']))
+        eval2 = (list(model.evaluation_df['dip_measured_state_per_m2']) +
+                 list(model.evaluation_df['dop_measured_state_per_m2']) +
+                 list(model.evaluation_df['pp_measured_state_per_m2']))
+
+        eval_total = (list(model.evaluation_df['dip_measured_mcg_per_m3']) +
+                      list(model.evaluation_df['dop_measured_mcg_per_m3']) +
+                      list(model.evaluation_df['pp_measured_mcg_per_m3']) +
+                      list(model.evaluation_df['dip_measured_state_per_m2']) +
+                      list(model.evaluation_df['dop_measured_state_per_m2']) +
+                      list(model.evaluation_df['pp_measured_state_per_m2']))
+
+        ax[0].set_ylabel('phosphorus flux [mcg per m3 water]')
+        ax[1].set_ylabel('phosphorus state [mcg per m2 soil]')
+
+        print('RRMSE mcg per m3: ', rrmse(eval1, sim1))
+        print('RRMSE P state: ', rrmse(eval2, sim2))
+        print('RRMSE total: ', rrmse(eval_total, sim_total))
+    else:
+        simulation = iao.format_water_results(model, results.water_results)
+        sim1 = simulation['simulated_flux_l_per_m2_per_day']
+        sim2 = simulation['amount_simulated_l_per_m2']
+
+        sim_total = simulation['simulated_flux_l_per_m2_per_day'] + simulation['amount_simulated_l_per_m2']
+
+        eval1 = list(model.evaluation_df['measured_flux_l_per_m2_per_day'])
+        eval2 = list(model.evaluation_df['amount_measured_l_per_m2'])
+
+        eval_total = (list(model.evaluation_df['measured_flux_l_per_m2_per_day']) +
+                      list(model.evaluation_df['amount_measured_l_per_m2']))
+
+        ax[0].set_ylabel('water flux [L m-2 s-1]')
+        ax[1].set_ylabel('water amount [L m-2]')
+
+        print('RRMSE flux [L m-2 day-1]: ', rrmse(eval1, sim1))
+        print('RRMSE amount [L m-2]: ', rrmse(eval2, sim2))
+        print('RRMSE total: ', rrmse(eval_total, sim_total))
+
+    ax[0].plot(sim1, linestyle='-', color='green', label='simulated')
+    ax[0].plot(eval1, linestyle='--', color='red', label='measured')
+
+    ax[1].plot(sim2, linestyle='-', color='green', label='simulated')
+    ax[1].plot(eval2, linestyle='--', color='red', label='measured')
+
+    plt.legend(loc='upper right')
+    ax[0].set_xlabel('time steps')
+    ax[1].set_xlabel('time steps')
+
+    plt.show()
