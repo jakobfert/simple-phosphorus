@@ -233,17 +233,23 @@ class ModelInterface:
                                u(name='ksat_mx_bv2', low=0.1, high=20, default=5,
                                  doc='saturated conductivity of bv2 layer in matrix [m/day]'),
                                u(name='n_ah', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of ah layer in matrix [m/day]'),
+                                 doc='VanGenuchtenMualem parameter n of ah layer in matrix'),
                                u(name='n_bv1', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of bv1 layer in matrix [m/day]'),
+                                 doc='VanGenuchtenMualem parameter n of bv1 layer in matrix'),
                                u(name='n_bv2', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of bv2 layer in matrix [m/day]'),
+                                 doc='VanGenuchtenMualem parameter n of bv2 layer in matrix'),
                                u(name='alpha_ah', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [m/day]'),
+                                 doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [1/cm]'),
                                u(name='alpha_bv1', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of bv1 layer in matrix [m/day]'),
+                                 doc='VanGenuchtenMualem parameter alpha of bv1 layer in matrix [1/cm]'),
                                u(name='alpha_bv2', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of bv2 layer in matrix [m/day]')
+                                 doc='VanGenuchtenMualem parameter alpha of bv2 layer in matrix [1/cm]'),
+                               u(name='m_ah', low=0.0, high=1.0, default=0.0557,
+                                 doc='VanGenuchtenMualem parameter m of ah layer in matrix'),
+                               u(name='m_bv1', low=0.0, high=1.0, default=0.0809,
+                                 doc='VanGenuchtenMualem parameter m of bv1 layer in matrix'),
+                               u(name='m_bv2', low=0.0, high=1.0, default=0.524,
+                                 doc='VanGenuchtenMualem parameter m of bv2 layer in matrix'),
                                ])
 
         if self.flow_approach == 2:
@@ -387,25 +393,28 @@ class WaterParameters:
         :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
 
-        self.saturated_depth = spotpy_set.parsaturated_depth if not spotpy_set.empty else 4.76
-        self.puddle_depth = spotpy_set.parpuddle_depth if not spotpy_set.empty else 0.004276
-        self.porosity_mx_ah = spotpy_set.parporosity_mx_ah if not spotpy_set.empty else 0.8057
-        self.porosity_mx_bv1 = spotpy_set.parporosity_mx_bv1 if not spotpy_set.empty else 0.0909
-        self.porosity_mx_bv2 = spotpy_set.parporosity_mx_bv2 if not spotpy_set.empty else 0.7163
-        self.w0_ah = spotpy_set.parw0_ah if not spotpy_set.empty else 0.9517
-        self.w0_bv1 = spotpy_set.parw0_bv1 if not spotpy_set.empty else 0.843
-        self.w0_bv2 = spotpy_set.parw0_bv2 if not spotpy_set.empty else 0.855
+        self.saturated_depth = spotpy_set.parsaturated_depth if not spotpy_set.empty else 1.7  # 4.76
+        self.puddle_depth = spotpy_set.parpuddle_depth if not spotpy_set.empty else 0.002348  # 0.004276
+        self.porosity_mx_ah = spotpy_set.parporosity_mx_ah if not spotpy_set.empty else 0.4639  # 0.8057
+        self.porosity_mx_bv1 = spotpy_set.parporosity_mx_bv1 if not spotpy_set.empty else 0.0354  # 0.0909
+        self.porosity_mx_bv2 = spotpy_set.parporosity_mx_bv2 if not spotpy_set.empty else 0.34299999999999997  # 0.7163
+        self.w0_ah = spotpy_set.parw0_ah if not spotpy_set.empty else 0.9863  # 0.9517
+        self.w0_bv1 = spotpy_set.parw0_bv1 if not spotpy_set.empty else 0.9565  # 0.843
+        self.w0_bv2 = spotpy_set.parw0_bv2 if not spotpy_set.empty else 0.9946  # 0.855
 
         if spotpy_soil_params:
-            self.ksat_mx_ah = spotpy_set.parksat_mx_ah if not spotpy_set.empty else 14.63
-            self.ksat_mx_bv1 = spotpy_set.parksat_mx_bv1 if not spotpy_set.empty else 3.541
-            self.ksat_mx_bv2 = spotpy_set.parksat_mx_bv2 if not spotpy_set.empty else 0.7764
-            self.n_ah = spotpy_set.parn_ah if not spotpy_set.empty else 1.211
-            self.n_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 1.211
-            self.n_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 1.211
-            self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.2178
-            self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.2178
-            self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.2178
+            self.ksat_mx_ah = spotpy_set.parksat_mx_ah if not spotpy_set.empty else 14.445  # 14.63
+            self.ksat_mx_bv1 = spotpy_set.parksat_mx_bv1 if not spotpy_set.empty else 2.6210000000000004  # 3.541
+            self.ksat_mx_bv2 = spotpy_set.parksat_mx_bv2 if not spotpy_set.empty else 1.777  # 0.7764
+            self.n_ah = spotpy_set.parn_ah if not spotpy_set.empty else 1.0590000000000002  # 1.211
+            self.n_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 1.088  # 1.211
+            self.n_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 2.102  # 1.211
+            self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.0912  # 0.2178
+            self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.97  # 0.2178
+            self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.6416  # 0.2178
+            self.m_ah = spotpy_set.parn_ah if not spotpy_set.empty else -1  # negative: 1 - 1/n
+            self.m_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else -1  # negative: 1 - 1/n
+            self.m_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else -1  # negative: 1 - 1/n
 
         if system == 2:
             self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 10
@@ -511,3 +520,5 @@ if __name__ == '__main__':
         spotpy.analyser.plot_bestmodelrun(results, eval_list, fig_name=dbname + '_best_model_run.png')
     else:
         single_run = SingleRun(setup, water=w_params, phosphorus=p_params)
+
+        rap.plotting(model=setup, results=single_run)

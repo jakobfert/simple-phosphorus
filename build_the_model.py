@@ -205,24 +205,29 @@ class CmfModel(cmf.project):
                         k = params.ksat_mx_ah
                         alpha = params.alpha_ah
                         n = params.n_ah
+                        m = params.m_ah
                     elif row['HorId'] == 'Bv1':
                         k = params.ksat_mx_bv1
                         alpha = params.alpha_bv1
                         n = params.n_bv1
+                        m = params.m_bv1
                     elif row['HorId'] == 'Bv2':
                         k = params.ksat_mx_bv2
                         alpha = params.alpha_bv2
                         n = params.n_bv2
+                        m = params.m_bv2
                     else:
                         k = (params.ksat_mx_ah + params.ksat_mx_bv1 + params.ksat_mx_bv2) / 3
                         alpha = (params.alpha_ah + params.alpha_bv1 + params.alpha_bv2) / 3
                         n = (params.n_ah + params.n_bv1 + params.n_bv2) / 3
+                        m = (params.m_ah + params.m_bv1 + params.m_bv2) / 3
                 else:
                     k = row['KS/KF[m/d]']
                     alpha = row['Alfa/PsiF[m-1]/[kPa]'] / 100
                     n = row['n/b']
+                    m = 1 - 1 / n
 
-                vgm = cmf.VanGenuchtenMualem(Ksat=k, phi=phi, alpha=alpha, n=n, w0=w0)
+                vgm = cmf.VanGenuchtenMualem(Ksat=k, phi=phi, alpha=alpha, n=n, m=m, w0=w0)
                 self.c.add_layer(depth, vgm)
 
         return layer_boundary
