@@ -311,8 +311,6 @@ class ModelInterface:
         empty_list = [np.nan] * len(self.evaluation_df['amount_measured_absolute'].tolist())
         if self.mode == 'phosphorus':
             empty_list = 6 * empty_list
-        else:
-            empty_list = 2 * empty_list
 
         try:
             phosphorus_params, water_params = self.set_parameters(vector)
@@ -341,15 +339,13 @@ class ModelInterface:
             water_results, phosphorus_results = rap.run(self.project, print_time=False)
             if self.mode == 'phosphorus':
                 simulation = iao.format_phosphorus_results(self, phosphorus_results)
-                # print(simulation)
                 return (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
                         simulation['pp_simulated_mcg_per_m3_mx+mp'] + simulation['dip_simulated_state_per_m2_mx+mp'] +
                         simulation['dop_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
             else:
                 simulation = iao.format_water_results(self, water_results)
                 # return simulation['simulated_flux_l_per_m2_per_day']
-                # return simulation['amount_simulated_l_per_m2']
-                return simulation['simulated_flux_l_per_m2_per_day'] + simulation['amount_simulated_l_per_m2']
+                return simulation['amount_simulated_l_per_m2']
         except:  # RuntimeError:
             print('CVode Error')
             iao.append_error_file(spotpy=vector, name=self.error_file, error='CVodeError')
@@ -368,9 +364,7 @@ class ModelInterface:
                     list(self.evaluation_df['pp_measured_state_per_m2']))
         else:
             # return list(self.evaluation_df['measured_flux_l_per_m2_per_day'])
-            # return list(self.evaluation_df['amount_measured_l_per_m2'])
-            return (list(self.evaluation_df['measured_flux_l_per_m2_per_day']) +
-                    list(self.evaluation_df['amount_measured_l_per_m2']))
+            return list(self.evaluation_df['amount_measured_l_per_m2'])
 
     def objectivefunction(self, simulation, evaluation):
         """
