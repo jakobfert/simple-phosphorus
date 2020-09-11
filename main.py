@@ -312,12 +312,7 @@ class ModelInterface:
         if self.mode == 'phosphorus':
             empty_list = 6 * empty_list
 
-        try:
-            phosphorus_params, water_params = self.set_parameters(vector)
-        except:
-            print('Parameter Error')
-            iao.append_error_file(spotpy=vector, name=self.error_file, error='ParameterError')
-            return empty_list
+        phosphorus_params, water_params = self.set_parameters(vector)
 
         try:
             self.project = CmfModel(water_params=water_params,
@@ -332,7 +327,7 @@ class ModelInterface:
                                     surface_runoff=True)
         except:
             print('Setup Error')
-            iao.append_error_file(spotpy=vector, name=self.error_file, error='Setup')
+            iao.append_error_file(spotpy=vector, name=self.error_file, error='SetupError')
             return empty_list
 
         try:
