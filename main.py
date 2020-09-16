@@ -403,9 +403,9 @@ class WaterParameters:
             self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.03058  #0.0912  # 0.2178
             self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.3984  #0.97  # 0.2178
             self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.707  #0.6416  # 0.2178
-            self.m_ah = spotpy_set.parn_ah if not spotpy_set.empty else 0.2502  #-1  # negative: 1 - 1/n
-            self.m_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 0.9893  #-1  # negative: 1 - 1/n
-            self.m_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 0.557  #-1  # negative: 1 - 1/n
+            self.m_ah = spotpy_set.parm_ah if not spotpy_set.empty else 0.2502  #-1  # negative: 1 - 1/n
+            self.m_bv1 = spotpy_set.parm_bv1 if not spotpy_set.empty else 0.9893  #-1  # negative: 1 - 1/n
+            self.m_bv2 = spotpy_set.parm_bv2 if not spotpy_set.empty else 0.557  #-1  # negative: 1 - 1/n
 
         if system == 2:
             self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 10
