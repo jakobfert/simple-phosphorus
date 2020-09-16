@@ -133,8 +133,9 @@ def water_and_phosphorus():
                 # UNCLEAR INDEX: this works only when BOTH water and phosphorus are taken from file
                 index = int(sys.argv[7]) if len(sys.argv) == 8 else 0
                 file = Path('results/SELECTION_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+                phos_name = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
                 # IMPORTANT: value should be 0.01 with real dataset, not 0.1!
-                db = create_params_from_file(file, method='percentage', value=0.01)
+                db = create_params_from_file(phos_name, file, method='percentage', value=0.01)
                 phosphorus = PhosphorusParameters(spotpy_set=db.iloc[[index]], system=fastflow)
             else:
                 phosphorus = PhosphorusParameters(system=fastflow)
@@ -147,7 +148,8 @@ def water_and_phosphorus():
             file = Path('results/SELECTION_MC_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
             water_name = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
             # IMPORTANT: value should be 0.01 with real dataset, not 0.1!
-            db = create_params_from_file(water_name, file, method='percentage', value=0.01)
+            # db = create_params_from_file(water_name, file, method='percentage', value=0.01)
+            db = create_params_from_file(water_name, file, method='number', value=10)
             water = WaterParameters(spotpy_set=db.iloc[[index]], spotpy_soil_params=vgm_params_via_spotpy,
                                     system=fastflow)
         else:  # parameters from script
@@ -382,36 +384,36 @@ class WaterParameters:
         :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
 
-        self.saturated_depth = spotpy_set.parsaturated_depth if not spotpy_set.empty else 1.7  # 4.76
-        self.puddle_depth = spotpy_set.parpuddle_depth if not spotpy_set.empty else 0.002348  # 0.004276
-        self.porosity_mx_ah = spotpy_set.parporosity_mx_ah if not spotpy_set.empty else 0.4639  # 0.8057
-        self.porosity_mx_bv1 = spotpy_set.parporosity_mx_bv1 if not spotpy_set.empty else 0.0354  # 0.0909
-        self.porosity_mx_bv2 = spotpy_set.parporosity_mx_bv2 if not spotpy_set.empty else 0.34299999999999997  # 0.7163
-        self.w0_ah = spotpy_set.parw0_ah if not spotpy_set.empty else 0.9863  # 0.9517
-        self.w0_bv1 = spotpy_set.parw0_bv1 if not spotpy_set.empty else 0.9565  # 0.843
-        self.w0_bv2 = spotpy_set.parw0_bv2 if not spotpy_set.empty else 0.9946  # 0.855
+        self.saturated_depth = spotpy_set.parsaturated_depth if not spotpy_set.empty else 6.137  #1.7  # 4.76
+        self.puddle_depth = spotpy_set.parpuddle_depth if not spotpy_set.empty else 0.003645  #0.002348  # 0.004276
+        self.porosity_mx_ah = spotpy_set.parporosity_mx_ah if not spotpy_set.empty else 0.4119  #0.4639  # 0.8057
+        self.porosity_mx_bv1 = spotpy_set.parporosity_mx_bv1 if not spotpy_set.empty else 0.006695  #0.0354  # 0.0909
+        self.porosity_mx_bv2 = spotpy_set.parporosity_mx_bv2 if not spotpy_set.empty else 0.01784  #0.34299999999999997  # 0.7163
+        self.w0_ah = spotpy_set.parw0_ah if not spotpy_set.empty else 0.866  #0.9863  # 0.9517
+        self.w0_bv1 = spotpy_set.parw0_bv1 if not spotpy_set.empty else 0.8438  #0.9565  # 0.843
+        self.w0_bv2 = spotpy_set.parw0_bv2 if not spotpy_set.empty else 0.9414  #0.9946  # 0.855
 
         if spotpy_soil_params:
-            self.ksat_mx_ah = spotpy_set.parksat_mx_ah if not spotpy_set.empty else 14.445  # 14.63
-            self.ksat_mx_bv1 = spotpy_set.parksat_mx_bv1 if not spotpy_set.empty else 2.6210000000000004  # 3.541
-            self.ksat_mx_bv2 = spotpy_set.parksat_mx_bv2 if not spotpy_set.empty else 1.777  # 0.7764
-            self.n_ah = spotpy_set.parn_ah if not spotpy_set.empty else 1.0590000000000002  # 1.211
-            self.n_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 1.088  # 1.211
-            self.n_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 2.102  # 1.211
-            self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.0912  # 0.2178
-            self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.97  # 0.2178
-            self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.6416  # 0.2178
-            self.m_ah = spotpy_set.parn_ah if not spotpy_set.empty else -1  # negative: 1 - 1/n
-            self.m_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else -1  # negative: 1 - 1/n
-            self.m_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else -1  # negative: 1 - 1/n
+            self.ksat_mx_ah = spotpy_set.parksat_mx_ah if not spotpy_set.empty else 0.39#0.268  # 14.445  # 14.63
+            self.ksat_mx_bv1 = spotpy_set.parksat_mx_bv1 if not spotpy_set.empty else 3.432#3.432  #2.6210000000000004  # 3.541
+            self.ksat_mx_bv2 = spotpy_set.parksat_mx_bv2 if not spotpy_set.empty else 14.37  #1.777  # 0.7764
+            self.n_ah = spotpy_set.parn_ah if not spotpy_set.empty else 3.312  #1.0590000000000002  # 1.211
+            self.n_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 3.18  #1.088  # 1.211
+            self.n_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 3.168  #2.102  # 1.211
+            self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.03058  #0.0912  # 0.2178
+            self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.3984  #0.97  # 0.2178
+            self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.707  #0.6416  # 0.2178
+            self.m_ah = spotpy_set.parn_ah if not spotpy_set.empty else 0.2502  #-1  # negative: 1 - 1/n
+            self.m_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 0.9893  #-1  # negative: 1 - 1/n
+            self.m_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 0.557  #-1  # negative: 1 - 1/n
 
         if system == 2:
             self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 10
         elif system == 3:
-            self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 62.7772
-            self.porefraction_mp = spotpy_set.parporefraction_mp if not spotpy_set.empty else 0.284378
-            self.density_mp = spotpy_set.pardensity_mp if not spotpy_set.empty else 0.96332
-            self.k_shape = spotpy_set.park_shape if not spotpy_set.empty else 0.01
+            self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 240#144  #62.7772
+            self.porefraction_mp = spotpy_set.parporefraction_mp if not spotpy_set.empty else 0.91  #0.284378
+            self.density_mp = spotpy_set.pardensity_mp if not spotpy_set.empty else 0.0381 #0.0381  #0.96332
+            self.k_shape = spotpy_set.park_shape if not spotpy_set.empty else 0.73#0.946  #0.01
 
 
 class PhosphorusParameters:
@@ -422,11 +424,11 @@ class PhosphorusParameters:
         :param spotpy_set: row of spotpy results
         :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
-        self.dip_state = spotpy_set.pardip_state if not spotpy_set.empty else 10
-        self.dop_state = spotpy_set.pardop_state if not spotpy_set.empty else 10
-        self.pp_state = spotpy_set.parpp_state if not spotpy_set.empty else 10
-        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 1
-        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.1
+        self.dip_state = spotpy_set.pardip_state if not spotpy_set.empty else 28.19  # 10
+        self.dop_state = spotpy_set.pardop_state if not spotpy_set.empty else 435.8  # 10
+        self.pp_state = spotpy_set.parpp_state if not spotpy_set.empty else 638.5  # 10
+        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 0.2798  # 1
+        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.09814  # 0.1
 
         if system == 2 or system == 3:
             self.mp_filter_dp = spotpy_set.parmp_filter_dp if not spotpy_set.empty else 1
@@ -466,9 +468,9 @@ if __name__ == '__main__':
     if len(sys.argv) < 6:
         irr = 1
         prof = 1
-        fastflow = 1
+        fastflow = 1  # 1: matrix, 2: bypass, 3: macropores
         runs = 10
-        water_or_phosphorus = 'water'  # 'water' or 'phosphorus'
+        water_or_phosphorus = 'phosphorus'  # 'water' or 'phosphorus'
     else:
         irr = int(sys.argv[1])
         prof = int(sys.argv[2])
