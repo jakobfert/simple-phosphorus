@@ -270,11 +270,22 @@ class ModelInterface:
         return param_list
 
     def create_phosphorus_parameters(self):
-        param_list = [u(name='dip_state', low=0, high=1000, default=10, doc='state of DIP'),
-                      u(name='dop_state', low=0, high=1000, default=10, doc='state of DOP'),
-                      u(name='pp_state', low=0, high=1000, default=10, doc='state of PP'),
+        param_list = [u(name='dip_state_ah', low=0, high=1000, default=10, doc='state of DIP (per ah layer)'),
+                      u(name='dop_state_ah', low=0, high=1000, default=10, doc='state of DOP (per ah layer)'),
+                      u(name='pp_state_ah', low=0, high=1000, default=10, doc='state of PP (per ah layer)'),
+                      u(name='dip_state_bv1', low=0, high=1000, default=10, doc='state of DIP (per bv1 layer)'),
+                      u(name='dop_state_bv1', low=0, high=1000, default=10, doc='state of DOP (per bv1 layer)'),
+                      u(name='pp_state_bv1', low=0, high=1000, default=10, doc='state of PP (per bv1 layer)'),
+                      u(name='dip_state_bv2', low=0, high=1000, default=10, doc='state of DIP (per bv2 layer)'),
+                      u(name='dop_state_bv2', low=0, high=1000, default=10, doc='state of DOP (per bv2 layer)'),
+                      u(name='pp_state_bv2', low=0, high=1000, default=10, doc='state of PP (per bv2 layer)'),
                       u(name='mx_filter_dp', low=0, high=1, default=1, doc='Filter for DIP + DOP in matrix'),
-                      u(name='mx_filter_pp', low=0, high=1, default=0.1, doc='Filter for PP in matrix')]
+                      u(name='mx_filter_pp', low=0, high=1, default=0.1, doc='Filter for PP in matrix'),
+                      u(name='dip_to_dop', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DIP and DOP'),
+                      u(name='dip_to_pp', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DIP and PP'),
+                      u(name='dop_to_pp', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DOP and PP')
+                      ]
+
         if self.flow_approach == 2 or self.flow_approach == 3:
             param_list.extend([u(name='mp_filter_dp', low=0, high=1, default=1,
                                  doc='Filter for DIP + DOP in macropores/bypass'),
@@ -312,7 +323,7 @@ class ModelInterface:
         """
         empty_list = [np.nan] * len(self.evaluation_df['amount_measured_absolute'].tolist())
         if self.mode == 'phosphorus':
-            empty_list = 6 * empty_list
+            empty_list = 3 * empty_list
 
         phosphorus_params, water_params = self.set_parameters(vector)
 
@@ -336,9 +347,12 @@ class ModelInterface:
             water_results, phosphorus_results = rap.run(self.project, print_time=False)
             if self.mode == 'phosphorus':
                 simulation = iao.format_phosphorus_results(self, phosphorus_results)
-                return (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
-                        simulation['pp_simulated_mcg_per_m3_mx+mp'] + simulation['dip_simulated_state_per_m2_mx+mp'] +
-                        simulation['dop_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
+                return (simulation['dip_simulated_state_per_m2_mx+mp'] +
+                        simulation['dop_simulated_state_per_m2_mx+mp'] +
+                        simulation['pp_simulated_state_per_m2_mx+mp'])
+                # return (simulation['dip_simulated_mcg_per_m3_mx+mp'] +
+                #         simulation['dop_simulated_mcg_per_m3_mx+mp'] +
+                #         simulation['pp_simulated_mcg_per_m3_mx+mp'])
             else:
                 simulation = iao.format_water_results(self, water_results)
                 # return simulation['simulated_flux_l_per_m2_per_day']
@@ -353,12 +367,12 @@ class ModelInterface:
         :return: the evaluation data
         """
         if self.mode == 'phosphorus':
-            return (list(self.evaluation_df['dip_measured_mcg_per_m3']) +
-                    list(self.evaluation_df['dop_measured_mcg_per_m3']) +
-                    list(self.evaluation_df['pp_measured_mcg_per_m3']) +
-                    list(self.evaluation_df['dip_measured_state_per_m2']) +
+            return (list(self.evaluation_df['dip_measured_state_per_m2']) +
                     list(self.evaluation_df['dop_measured_state_per_m2']) +
                     list(self.evaluation_df['pp_measured_state_per_m2']))
+            # return (list(self.evaluation_df['dip_measured_mcg_per_m3']) +
+            #         list(self.evaluation_df['dop_measured_mcg_per_m3']) +
+            #         list(self.evaluation_df['pp_measured_mcg_per_m3']))
         else:
             # return list(self.evaluation_df['measured_flux_l_per_m2_per_day'])
             return list(self.evaluation_df['amount_measured_l_per_m2'])
@@ -424,11 +438,22 @@ class PhosphorusParameters:
         :param spotpy_set: row of spotpy results
         :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
-        self.dip_state = spotpy_set.pardip_state if not spotpy_set.empty else 28.19  # 10
-        self.dop_state = spotpy_set.pardop_state if not spotpy_set.empty else 435.8  # 10
-        self.pp_state = spotpy_set.parpp_state if not spotpy_set.empty else 638.5  # 10
-        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 0.2798  # 1
-        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.09814  # 0.1
+        self.dip_state_ah = spotpy_set.pardip_state_ah if not spotpy_set.empty else 865  # 10
+        self.dop_state_ah = spotpy_set.pardop_state_ah if not spotpy_set.empty else 523  # 10
+        self.pp_state_ah = spotpy_set.parpp_state_ah if not spotpy_set.empty else 607  # 10
+        self.dip_state_bv1 = spotpy_set.pardip_state_bv1 if not spotpy_set.empty else 865  # 10
+        self.dop_state_bv1 = spotpy_set.pardop_state_bv1 if not spotpy_set.empty else 523  # 10
+        self.pp_state_bv1 = spotpy_set.parpp_state_bv1 if not spotpy_set.empty else 607  # 10
+        self.dip_state_bv2 = spotpy_set.pardip_state_bv2 if not spotpy_set.empty else 865  # 10
+        self.dop_state_bv2 = spotpy_set.pardop_state_bv2 if not spotpy_set.empty else 523  # 10
+        self.pp_state_bv2 = spotpy_set.parpp_state_bv2 if not spotpy_set.empty else 607  # 10
+
+        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 0.0815611  # 1
+        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.0984676  # 0.1
+
+        self.dip_to_dop = spotpy_set.pardip_to_dop if not spotpy_set.empty else 0
+        self.dip_to_pp = spotpy_set.pardip_to_pp if not spotpy_set.empty else 0
+        self.dop_to_pp = spotpy_set.pardop_to_pp if not spotpy_set.empty else 0
 
         if system == 2 or system == 3:
             self.mp_filter_dp = spotpy_set.parmp_filter_dp if not spotpy_set.empty else 1

@@ -137,7 +137,7 @@ class CmfModel(cmf.project):
         self.c = self.NewCell(*cell)
 
         soil = iao.real_soil_from_csv(soil_file=Path('input/MIT' + str(profile) + '_soil.csv'))
-        self.layer_boundary = self.create_layers(soil, water_params, based_on_spotpy=spotpy_soil_params)
+        self.layer_boundary, self.layer_type = self.create_layers(soil, water_params, based_on_spotpy=spotpy_soil_params)
         self.mx_infiltration, self.mx_percolation = self.connect_matrix()
 
         self.gw = self.create_groundwater()
@@ -165,6 +165,7 @@ class CmfModel(cmf.project):
             self.matrix_filter(phosphorus_params)
             self.rainstation_concentration(irrigation, profile)
             self.layer_concentration(phosphorus_params)
+            self.layer_decay(phosphorus_params)
             if type(self.flow_approach) == BypassFastFlow:
                 self.bypass_filter(phosphorus_params)
             elif type(self.flow_approach) == MacroporeFastFlow:
@@ -181,11 +182,13 @@ class CmfModel(cmf.project):
         :return: A list of the lower boundaries of all created layer
         """
         layer_boundary = []
+        layer_type = []
 
         for i, row in soil_horizons.iterrows():
             depth = -soil_horizons['Depth(m)'][i]  # for positive values
             if depth > 0:
                 layer_boundary.append(depth)
+                layer_type.append(row['HorId'])
 
                 if row['HorId'] == 'Ah':
                     phi = params.porosity_mx_ah
@@ -230,7 +233,7 @@ class CmfModel(cmf.project):
                 vgm = cmf.VanGenuchtenMualem(Ksat=k, phi=phi, alpha=alpha, n=n, m=m, w0=w0)
                 self.c.add_layer(depth, vgm)
 
-        return layer_boundary
+        return layer_boundary, layer_type
 
     def connect_matrix(self):
         """
@@ -293,16 +296,51 @@ class CmfModel(cmf.project):
             amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['PP [mcg/l]'].mean()))
 
     def layer_concentration(self, phosphorus_params):
+        i = 0
         for layer in self.c.layers:
-            # layer.Solute(self.dip).set_adsorption(adsorption)
-            layer.Solute(self.dip).state = phosphorus_params.dip_state
-            layer.Solute(self.dop).state = phosphorus_params.dop_state
-            layer.Solute(self.pp).state = phosphorus_params.pp_state
+            # layer.Solute(self.dip).set_adsorption(cmf.LinearAdsorption(0.1, 10))
+            if self.layer_type[i] == 'Ah':
+                layer.Solute(self.dip).state = phosphorus_params.dip_state_ah
+                layer.Solute(self.dop).state = phosphorus_params.dop_state_ah
+                layer.Solute(self.pp).state = phosphorus_params.pp_state_ah
+            elif self.layer_type[i] == 'Bv1':
+                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv1
+                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv1
+                layer.Solute(self.pp).state = phosphorus_params.pp_state_bv1
+            elif self.layer_type[i] == 'Bv2':
+                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv2
+                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv2
+                layer.Solute(self.pp).state = phosphorus_params.pp_state_bv2
+            i += 1
+
         if type(self.flow_approach) == MacroporeFastFlow:
             for mp in self.flow_approach.macropores:
                 mp.Solute(self.dip).state = 0  # I think "0" for macropores is correct: MPs are empty at the beginning
                 mp.Solute(self.dop).state = 0
                 mp.Solute(self.pp).state = 0
+
+    def layer_decay(self, phosphorus_params):
+        """
+        Folgende Übergänge existieren:
+        DIP <-> DOP [param: dip_to_dop]
+        DIP <-> PP [param: dip_to_pp]
+        DOP <-> PP [param: dop_to_pp]
+
+        You give decay rates (positive). Thus, a positive value means DECREASE, a negative value means INCREASE.
+        Thus: for dop_decay it is minus because direction of dip_to_dop is TOWARDS DOP.
+        for pp_decay, both parameters are negative, because both directions are TOWARDS PP.
+
+        Since water does not stay for long in macropores or bypass, conversions between P forms are only present in the
+        soil layers
+        """
+        dip_decay = phosphorus_params.dip_to_dop + phosphorus_params.dip_to_pp
+        dop_decay = phosphorus_params.dop_to_pp - phosphorus_params.dip_to_dop
+        pp_decay = -phosphorus_params.dip_to_pp - phosphorus_params.dop_to_pp
+
+        for layer in self.c.layers:
+            layer.Solute(self.dip).decay = dip_decay
+            layer.Solute(self.dop).decay = dop_decay
+            layer.Solute(self.pp).decay = pp_decay
 
     # -------------------------------------- FILTER FOR PHOSPHORUS --------------------------------------
     def matrix_filter(self, phosphorus_params):
