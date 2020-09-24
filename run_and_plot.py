@@ -132,14 +132,14 @@ def fill_phosphorus_result_df(model: CmfModel, df, water_df, t):
     """
     tstr = str(t)
     for s in model.solutes:
-        df['concentration_mcg_per_m3_mx_' + s.Name][tstr] = [layer.conc(s) for layer in model.c.layers]
+        # df['concentration_mcg_per_m3_mx_' + s.Name][tstr] = [layer.conc(s) for layer in model.c.layers]
         df['concentration_flux_mcg_per_m3_mx_' + s.Name][tstr] = [model.mx_infiltration.conc(t, s)] + [
             flux.conc(t, s) for flux in model.mx_percolation]
         df['simulated_state_mcg_per_m2_per_layer_mx_' + s.Name][tstr] = [layer.Solute(s).state * 1e-3 for layer
                                                                          in model.c.layers]
         if type(model.flow_approach) == MacroporeFastFlow:
-            df['concentration_mcg_per_m3_mp_' + s.Name][tstr] = [mp.conc(s) for mp in
-                                                                 model.flow_approach.macropores]
+            # df['concentration_mcg_per_m3_mp_' + s.Name][tstr] = [mp.conc(s) for mp in
+            #                                                      model.flow_approach.macropores]
             df['concentration_flux_mcg_per_m3_mp_' + s.Name][tstr] = [model.flow_approach.mp_infiltration.conc(
                 t, s)] + [flux.conc(t, s) for flux in model.flow_approach.mp_percolation]
             df['simulated_state_mcg_per_m2_per_layer_mp_' + s.Name][tstr] = [mp.Solute(s).state * 1e-3 for mp in
@@ -151,7 +151,7 @@ def fill_phosphorus_result_df(model: CmfModel, df, water_df, t):
         df[s.Name + '_simulated_mcg_per_m3_mx+mp'][tstr] = total_concentration_mcg_per_m3(model, df, water_df, s, tstr)
         df[s.Name + '_simulated_state_per_m2_mx+mp'][tstr] = total_amount_mcg_per_m2(model, df, water_df, s, tstr)
 
-    df['concentration_gw_recharge_mcg_per_m3'][tstr] = [model.gw.conc(t, T) for T in model.solutes]
+    # df['concentration_gw_recharge_mcg_per_m3'][tstr] = [model.gw.conc(t, T) for T in model.solutes]
 
 
 def create_solver(model: CmfModel):

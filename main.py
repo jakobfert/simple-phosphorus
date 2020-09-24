@@ -6,7 +6,7 @@ The aim of this script is to run the model in different ways:
 a) single run with water (DONE)
 b) single run with phosphorus (DONE)
 c) spotpy with water (DONE)
-d) spotpy with phosphorus (TODO)
+d) spotpy with phosphorus (DONE)
 e) validation of water and phosphorus routines (TODO)
 
 TODO: Wenn ich das geschafft habe würde ich mich gerne noch auf Fehlersuche begeben: Es werden immer noch häufig Fehler
@@ -228,31 +228,32 @@ class ModelInterface:
         if vgm_via_spotpy:
             # value ranges for n and alpha follow http://www.international-agrophysics.org/Relationship-between-van-
             # Genuchten-s-parameters-of-the-retention-curve-equation-nand,106597,0,2.html
-            param_list.extend([u(name='ksat_mx_ah', low=0.1, high=20, default=5,
-                                 doc='saturated conductivity of ah layer in matrix [m/day]'),
-                               u(name='ksat_mx_bv1', low=0.1, high=20, default=5,
-                                 doc='saturated conductivity of bv1 layer in matrix [m/day]'),
-                               u(name='ksat_mx_bv2', low=0.1, high=20, default=5,
-                                 doc='saturated conductivity of bv2 layer in matrix [m/day]'),
-                               u(name='n_ah', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of ah layer in matrix'),
-                               u(name='n_bv1', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of bv1 layer in matrix'),
-                               u(name='n_bv2', low=1.0, high=3.6, default=1.211,
-                                 doc='VanGenuchtenMualem parameter n of bv2 layer in matrix'),
-                               u(name='alpha_ah', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [1/cm]'),
-                               u(name='alpha_bv1', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of bv1 layer in matrix [1/cm]'),
-                               u(name='alpha_bv2', low=0, high=1, default=0.2178,
-                                 doc='VanGenuchtenMualem parameter alpha of bv2 layer in matrix [1/cm]'),
-                               u(name='m_ah', low=0.0, high=1.0, default=0.0557,
-                                 doc='VanGenuchtenMualem parameter m of ah layer in matrix'),
-                               u(name='m_bv1', low=0.0, high=1.0, default=0.0809,
-                                 doc='VanGenuchtenMualem parameter m of bv1 layer in matrix'),
-                               u(name='m_bv2', low=0.0, high=1.0, default=0.524,
-                                 doc='VanGenuchtenMualem parameter m of bv2 layer in matrix'),
-                               ])
+            param_list.extend([
+                u(name='ksat_mx_ah', low=0.1, high=20, default=5,
+                  doc='saturated conductivity of ah layer in matrix [m/day]'),
+                u(name='ksat_mx_bv1', low=0.1, high=20, default=5,
+                  doc='saturated conductivity of bv1 layer in matrix [m/day]'),
+                u(name='ksat_mx_bv2', low=0.1, high=20, default=5,
+                  doc='saturated conductivity of bv2 layer in matrix [m/day]'),
+                u(name='n_ah', low=1.0, high=3.6, default=1.211,
+                  doc='VanGenuchtenMualem parameter n of ah layer in matrix'),
+                u(name='n_bv1', low=1.0, high=3.6, default=1.211,
+                  doc='VanGenuchtenMualem parameter n of bv1 layer in matrix'),
+                u(name='n_bv2', low=1.0, high=3.6, default=1.211,
+                  doc='VanGenuchtenMualem parameter n of bv2 layer in matrix'),
+                u(name='alpha_ah', low=0, high=1, default=0.2178,
+                  doc='VanGenuchtenMualem parameter alpha of ah layer in matrix [1/cm]'),
+                u(name='alpha_bv1', low=0, high=1, default=0.2178,
+                  doc='VanGenuchtenMualem parameter alpha of bv1 layer in matrix [1/cm]'),
+                u(name='alpha_bv2', low=0, high=1, default=0.2178,
+                  doc='VanGenuchtenMualem parameter alpha of bv2 layer in matrix [1/cm]'),
+                u(name='m_ah', low=0.0, high=1.0, default=0.0557,
+                  doc='VanGenuchtenMualem parameter m of ah layer in matrix'),
+                u(name='m_bv1', low=0.0, high=1.0, default=0.0809,
+                  doc='VanGenuchtenMualem parameter m of bv1 layer in matrix'),
+                u(name='m_bv2', low=0.0, high=1.0, default=0.524,
+                  doc='VanGenuchtenMualem parameter m of bv2 layer in matrix'),
+            ])
 
         if self.flow_approach == 2:
             param_list.append(
@@ -270,32 +271,35 @@ class ModelInterface:
         return param_list
 
     def create_phosphorus_parameters(self):
-        param_list = [u(name='dip_state_ah', low=0, high=1000, default=10, doc='state of DIP (per ah layer)'),
-                      u(name='dop_state_ah', low=0, high=1000, default=10, doc='state of DOP (per ah layer)'),
-                      u(name='pp_state_ah', low=0, high=1000, default=10, doc='state of PP (per ah layer)'),
-                      u(name='dip_state_bv1', low=0, high=1000, default=10, doc='state of DIP (per bv1 layer)'),
-                      u(name='dop_state_bv1', low=0, high=1000, default=10, doc='state of DOP (per bv1 layer)'),
-                      u(name='pp_state_bv1', low=0, high=1000, default=10, doc='state of PP (per bv1 layer)'),
-                      u(name='dip_state_bv2', low=0, high=1000, default=10, doc='state of DIP (per bv2 layer)'),
-                      u(name='dop_state_bv2', low=0, high=1000, default=10, doc='state of DOP (per bv2 layer)'),
-                      u(name='pp_state_bv2', low=0, high=1000, default=10, doc='state of PP (per bv2 layer)'),
-                      u(name='mx_filter_dp', low=0, high=1, default=1, doc='Filter for DIP + DOP in matrix'),
-                      u(name='mx_filter_pp', low=0, high=1, default=0.1, doc='Filter for PP in matrix'),
-                      u(name='dip_to_dop', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DIP and DOP'),
-                      u(name='dip_to_pp', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DIP and PP'),
-                      u(name='dop_to_pp', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DOP and PP')
-                      ]
+        param_list = [
+            u(name='dip_state_ah', low=0, high=1000, default=10, doc='state of DIP (per ah layer)'),
+            u(name='dop_state_ah', low=0, high=1000, default=10, doc='state of DOP (per ah layer)'),
+            u(name='pp_state_ah', low=0, high=1000, default=10, doc='state of PP (per ah layer)'),
+            u(name='dip_state_bv1', low=0, high=1000, default=10, doc='state of DIP (per bv1 layer)'),
+            u(name='dop_state_bv1', low=0, high=1000, default=10, doc='state of DOP (per bv1 layer)'),
+            u(name='pp_state_bv1', low=0, high=1000, default=10, doc='state of PP (per bv1 layer)'),
+            u(name='dip_state_bv2', low=0, high=1000, default=10, doc='state of DIP (per bv2 layer)'),
+            u(name='dop_state_bv2', low=0, high=1000, default=10, doc='state of DOP (per bv2 layer)'),
+            u(name='pp_state_bv2', low=0, high=1000, default=10, doc='state of PP (per bv2 layer)'),
+            u(name='mx_filter_dp', low=0, high=1, default=1, doc='Filter for DIP + DOP in matrix'),
+            u(name='mx_filter_pp', low=0, high=1, default=0.1, doc='Filter for PP in matrix'),
+            # u(name='dip_to_dop', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DIP and DOP'),
+            # u(name='dip_to_pp', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DIP and PP'),
+            # u(name='dop_to_pp', low=-0.1e0, high=0.1e0, default=10, doc='conversion between DOP and PP')
+        ]
 
         if self.flow_approach == 2 or self.flow_approach == 3:
-            param_list.extend([u(name='mp_filter_dp', low=0, high=1, default=1,
-                                 doc='Filter for DIP + DOP in macropores/bypass'),
-                               u(name='mp_filter_pp', low=0, high=1, default=0.8,
-                                 doc='Filter for PP in macropores/bypass')])
+            param_list.extend([
+                u(name='mp_filter_dp', low=0, high=1, default=1, doc='Filter for DIP + DOP in macropores/bypass'),
+                u(name='mp_filter_pp', low=0, high=1, default=0.8, doc='Filter for PP in macropores/bypass')
+            ])
         if self.flow_approach == 3:
-            param_list.extend([u(name='exch_filter_dp', low=0, high=1, default=1,
-                                 doc='exchange of DIP and DOP between matrix and macropores'),
-                               u(name='exch_filter_pp', low=0, high=1, default=0.8,
-                                 doc='exchange of PP between matrix and macropores')])
+            param_list.extend([
+                u(name='exch_filter_dp', low=0, high=1, default=1,
+                  doc='exchange of DIP and DOP between matrix and macropores'),
+                u(name='exch_filter_pp', low=0, high=1, default=0.8,
+                  doc='exchange of PP between matrix and macropores')
+            ])
         return param_list
 
     def parameters(self):
@@ -398,36 +402,36 @@ class WaterParameters:
         :param system: 1 for matrix flow only, 2 for bypass flow, and 3 for macropores
         """
 
-        self.saturated_depth = spotpy_set.parsaturated_depth if not spotpy_set.empty else 6.137  #1.7  # 4.76
-        self.puddle_depth = spotpy_set.parpuddle_depth if not spotpy_set.empty else 0.003645  #0.002348  # 0.004276
-        self.porosity_mx_ah = spotpy_set.parporosity_mx_ah if not spotpy_set.empty else 0.4119  #0.4639  # 0.8057
-        self.porosity_mx_bv1 = spotpy_set.parporosity_mx_bv1 if not spotpy_set.empty else 0.006695  #0.0354  # 0.0909
-        self.porosity_mx_bv2 = spotpy_set.parporosity_mx_bv2 if not spotpy_set.empty else 0.01784  #0.34299999999999997  # 0.7163
-        self.w0_ah = spotpy_set.parw0_ah if not spotpy_set.empty else 0.866  #0.9863  # 0.9517
-        self.w0_bv1 = spotpy_set.parw0_bv1 if not spotpy_set.empty else 0.8438  #0.9565  # 0.843
-        self.w0_bv2 = spotpy_set.parw0_bv2 if not spotpy_set.empty else 0.9414  #0.9946  # 0.855
+        self.saturated_depth = spotpy_set.parsaturated_depth if not spotpy_set.empty else 6.137  # 1.7  # 4.76
+        self.puddle_depth = spotpy_set.parpuddle_depth if not spotpy_set.empty else 0.003645  # 0.002348  # 0.004276
+        self.porosity_mx_ah = spotpy_set.parporosity_mx_ah if not spotpy_set.empty else 0.4119  # 0.4639  # 0.8057
+        self.porosity_mx_bv1 = spotpy_set.parporosity_mx_bv1 if not spotpy_set.empty else 0.006695  # 0.0354  # 0.0909
+        self.porosity_mx_bv2 = spotpy_set.parporosity_mx_bv2 if not spotpy_set.empty else 0.01784  # 0.34299999999999997  # 0.7163
+        self.w0_ah = spotpy_set.parw0_ah if not spotpy_set.empty else 0.866  # 0.9863  # 0.9517
+        self.w0_bv1 = spotpy_set.parw0_bv1 if not spotpy_set.empty else 0.8438  # 0.9565  # 0.843
+        self.w0_bv2 = spotpy_set.parw0_bv2 if not spotpy_set.empty else 0.9414  # 0.9946  # 0.855
 
         if spotpy_soil_params:
-            self.ksat_mx_ah = spotpy_set.parksat_mx_ah if not spotpy_set.empty else 0.39#0.268  # 14.445  # 14.63
-            self.ksat_mx_bv1 = spotpy_set.parksat_mx_bv1 if not spotpy_set.empty else 3.432#3.432  #2.6210000000000004  # 3.541
-            self.ksat_mx_bv2 = spotpy_set.parksat_mx_bv2 if not spotpy_set.empty else 14.37  #1.777  # 0.7764
-            self.n_ah = spotpy_set.parn_ah if not spotpy_set.empty else 3.312  #1.0590000000000002  # 1.211
-            self.n_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 3.18  #1.088  # 1.211
-            self.n_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 3.168  #2.102  # 1.211
-            self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.03058  #0.0912  # 0.2178
-            self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.3984  #0.97  # 0.2178
-            self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.707  #0.6416  # 0.2178
-            self.m_ah = spotpy_set.parm_ah if not spotpy_set.empty else 0.2502  #-1  # negative: 1 - 1/n
-            self.m_bv1 = spotpy_set.parm_bv1 if not spotpy_set.empty else 0.9893  #-1  # negative: 1 - 1/n
-            self.m_bv2 = spotpy_set.parm_bv2 if not spotpy_set.empty else 0.557  #-1  # negative: 1 - 1/n
+            self.ksat_mx_ah = spotpy_set.parksat_mx_ah if not spotpy_set.empty else 0.39  # 0.268  # 14.445  # 14.63
+            self.ksat_mx_bv1 = spotpy_set.parksat_mx_bv1 if not spotpy_set.empty else 3.432  # 3.432  #2.6210000000000004  # 3.541
+            self.ksat_mx_bv2 = spotpy_set.parksat_mx_bv2 if not spotpy_set.empty else 14.37  # 1.777  # 0.7764
+            self.n_ah = spotpy_set.parn_ah if not spotpy_set.empty else 3.312  # 1.0590000000000002  # 1.211
+            self.n_bv1 = spotpy_set.parn_bv1 if not spotpy_set.empty else 3.18  # 1.088  # 1.211
+            self.n_bv2 = spotpy_set.parn_bv2 if not spotpy_set.empty else 3.168  # 2.102  # 1.211
+            self.alpha_ah = spotpy_set.paralpha_ah if not spotpy_set.empty else 0.03058  # 0.0912  # 0.2178
+            self.alpha_bv1 = spotpy_set.paralpha_bv1 if not spotpy_set.empty else 0.3984  # 0.97  # 0.2178
+            self.alpha_bv2 = spotpy_set.paralpha_bv2 if not spotpy_set.empty else 0.707  # 0.6416  # 0.2178
+            self.m_ah = spotpy_set.parm_ah if not spotpy_set.empty else 0.2502  # -1  # negative: 1 - 1/n
+            self.m_bv1 = spotpy_set.parm_bv1 if not spotpy_set.empty else 0.9893  # -1  # negative: 1 - 1/n
+            self.m_bv2 = spotpy_set.parm_bv2 if not spotpy_set.empty else 0.557  # -1  # negative: 1 - 1/n
 
         if system == 2:
             self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 10
         elif system == 3:
-            self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 240#144  #62.7772
-            self.porefraction_mp = spotpy_set.parporefraction_mp if not spotpy_set.empty else 0.91  #0.284378
-            self.density_mp = spotpy_set.pardensity_mp if not spotpy_set.empty else 0.0381 #0.0381  #0.96332
-            self.k_shape = spotpy_set.park_shape if not spotpy_set.empty else 0.73#0.946  #0.01
+            self.ksat_mp = spotpy_set.parksat_mp if not spotpy_set.empty else 240  # 144  #62.7772
+            self.porefraction_mp = spotpy_set.parporefraction_mp if not spotpy_set.empty else 0.91  # 0.284378
+            self.density_mp = spotpy_set.pardensity_mp if not spotpy_set.empty else 0.0381  # 0.0381  #0.96332
+            self.k_shape = spotpy_set.park_shape if not spotpy_set.empty else 0.73  # 0.946  #0.01
 
 
 class PhosphorusParameters:
@@ -447,13 +451,12 @@ class PhosphorusParameters:
         self.dip_state_bv2 = spotpy_set.pardip_state_bv2 if not spotpy_set.empty else 865  # 10
         self.dop_state_bv2 = spotpy_set.pardop_state_bv2 if not spotpy_set.empty else 523  # 10
         self.pp_state_bv2 = spotpy_set.parpp_state_bv2 if not spotpy_set.empty else 607  # 10
+        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 1.0  # 0.0815611  # 1
+        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.1  # 0.0984676  # 0.1
 
-        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 0.0815611  # 1
-        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.0984676  # 0.1
-
-        self.dip_to_dop = spotpy_set.pardip_to_dop if not spotpy_set.empty else 0
-        self.dip_to_pp = spotpy_set.pardip_to_pp if not spotpy_set.empty else 0
-        self.dop_to_pp = spotpy_set.pardop_to_pp if not spotpy_set.empty else 0
+        # self.dip_to_dop = spotpy_set.pardip_to_dop if not spotpy_set.empty else 0
+        # self.dip_to_pp = spotpy_set.pardip_to_pp if not spotpy_set.empty else 0
+        # self.dop_to_pp = spotpy_set.pardop_to_pp if not spotpy_set.empty else 0
 
         if system == 2 or system == 3:
             self.mp_filter_dp = spotpy_set.parmp_filter_dp if not spotpy_set.empty else 1

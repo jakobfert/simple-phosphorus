@@ -165,7 +165,7 @@ class CmfModel(cmf.project):
             self.matrix_filter(phosphorus_params)
             self.rainstation_concentration(irrigation, profile)
             self.layer_concentration(phosphorus_params)
-            self.layer_decay(phosphorus_params)
+            # self.layer_decay(phosphorus_params)
             if type(self.flow_approach) == BypassFastFlow:
                 self.bypass_filter(phosphorus_params)
             elif type(self.flow_approach) == MacroporeFastFlow:
