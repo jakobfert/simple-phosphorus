@@ -220,10 +220,20 @@ def format_water_results(approach, water_results):
     return simulation_results
 
 
-def format_phosphorus_results(approach, phosphorus_results):
+def mean_concentration_for_period(phosphorus, water, i, s, time0, time1):
+    conc = [value[i] for key, value in phosphorus[s.Name + '_simulated_mcg_per_m3_mx+mp'].items()
+            if time0 <= cmf.Time(datetime.strptime(key, '%d.%m.%Y %H:%M')) < time1]
+    flux = [value[i] for key, value in water['simulated_flux_l_per_m2_per_day'].items() if
+            time0 <= cmf.Time(datetime.strptime(key, '%d.%m.%Y %H:%M')) < time1]
+
+    return sum([(a * b) for a, b in zip(conc, flux)]) / sum(flux)
+
+
+def format_phosphorus_results(approach, phosphorus_results, water_results):
     """
     TEXT
     :param phosphorus_results:
+    :param water_results:
     :param approach:
     :return:
     """
@@ -239,14 +249,16 @@ def format_phosphorus_results(approach, phosphorus_results):
         i = layers[depth.index(row['depth [m]'])]
         time0, time1 = timespan(begin, row)
         for s in approach.project.solutes:
-            mean_for_period = statistics.mean([value[i] for key, value in  # value[i] is the flux in the i-th soil layer
-                                               phosphorus_results[s.Name + '_simulated_mcg_per_m3_mx+mp'].items()
-                                               if time0 <= cmf.Time(datetime.strptime(key, '%d.%m.%Y %H:%M')) < time1])
-            simulation_results[s.Name + '_simulated_mcg_per_m3_mx+mp'].append(mean_for_period)
+            # Concentration over time: this is not simply the mean of all time steps, since it needs to be weighted by
+            # the water amount, similar to total_concentration_mcg_per_m3() in input_and_output.py
+            mcg_per_m3_mean = mean_concentration_for_period(phosphorus_results, water_results, i, s, time0, time1)
+            simulation_results[s.Name + '_simulated_mcg_per_m3_mx+mp'].append(mcg_per_m3_mean)
 
-            sum_for_period = sum([value[i] for key, value in  # value[i] is the flux in the i-th soil layer
+            # since the state is always per m2 for a whole day, it needs to be transformed to the minute
+            sum_for_period = sum([value[i] / (24 * 60) for key, value in  # value[i] is the flux in the i-th soil layer
                                   phosphorus_results[s.Name + '_simulated_state_per_m2_mx+mp'].items()
                                   if time0 <= cmf.Time(datetime.strptime(key, '%d.%m.%Y %H:%M')) < time1])
+
             # maybe for testing: concentration * water_amount should be the same
             simulation_results[s.Name + '_simulated_state_per_m2_mx+mp'].append(sum_for_period)
 

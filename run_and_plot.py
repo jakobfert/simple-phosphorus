@@ -96,7 +96,7 @@ def fill_water_result_df(model: CmfModel, df, t):
 
 def total_concentration_mcg_per_m3(model, p_df, w_df, solute, t_str):
     # Note: here, concentration (mcg / m3) is multiplied with l/(m2*day). This is correct, since l/m2 = m3/1000m2.
-    # Moreover, it is divided by percolating water, so it's canceled.
+    # Moreover, it is divided by percolating water, so it actually doesn't matter.
     if type(model.flow_approach) == MacroporeFastFlow or type(model.flow_approach) == BypassFastFlow:
         conc = [(a * b + c * d) / (b + d) if (b + d) else 0 for a, b, c, d in
                 zip(p_df['concentration_flux_mcg_per_m3_mx_' + solute.Name][t_str],
@@ -132,17 +132,17 @@ def fill_phosphorus_result_df(model: CmfModel, df, water_df, t):
     """
     tstr = str(t)
     for s in model.solutes:
-        # df['concentration_mcg_per_m3_mx_' + s.Name][tstr] = [layer.conc(s) for layer in model.c.layers]
+        df['concentration_mcg_per_m3_mx_' + s.Name][tstr] = [layer.conc(s) for layer in model.c.layers]
         df['concentration_flux_mcg_per_m3_mx_' + s.Name][tstr] = [model.mx_infiltration.conc(t, s)] + [
             flux.conc(t, s) for flux in model.mx_percolation]
-        df['simulated_state_mcg_per_m2_per_layer_mx_' + s.Name][tstr] = [layer.Solute(s).state * 1e-3 for layer
+        df['simulated_state_mcg_per_m2_per_layer_mx_' + s.Name][tstr] = [layer.Solute(s).state / model.c.area for layer
                                                                          in model.c.layers]
         if type(model.flow_approach) == MacroporeFastFlow:
-            # df['concentration_mcg_per_m3_mp_' + s.Name][tstr] = [mp.conc(s) for mp in
-            #                                                      model.flow_approach.macropores]
+            df['concentration_mcg_per_m3_mp_' + s.Name][tstr] = [mp.conc(s) for mp in
+                                                                 model.flow_approach.macropores]
             df['concentration_flux_mcg_per_m3_mp_' + s.Name][tstr] = [model.flow_approach.mp_infiltration.conc(
                 t, s)] + [flux.conc(t, s) for flux in model.flow_approach.mp_percolation]
-            df['simulated_state_mcg_per_m2_per_layer_mp_' + s.Name][tstr] = [mp.Solute(s).state * 1e-3 for mp in
+            df['simulated_state_mcg_per_m2_per_layer_mp_' + s.Name][tstr] = [mp.Solute(s).state / model.c.area for mp in
                                                                              model.flow_approach.macropores]
         elif type(model.flow_approach) == BypassFastFlow:
             df['concentration_flux_mcg_per_m3_mp_' + s.Name][tstr] = [bp.conc(t, s) for bp in
@@ -151,7 +151,7 @@ def fill_phosphorus_result_df(model: CmfModel, df, water_df, t):
         df[s.Name + '_simulated_mcg_per_m3_mx+mp'][tstr] = total_concentration_mcg_per_m3(model, df, water_df, s, tstr)
         df[s.Name + '_simulated_state_per_m2_mx+mp'][tstr] = total_amount_mcg_per_m2(model, df, water_df, s, tstr)
 
-    # df['concentration_gw_recharge_mcg_per_m3'][tstr] = [model.gw.conc(t, T) for T in model.solutes]
+    df['concentration_gw_recharge_mcg_per_m3'][tstr] = [model.gw.conc(t, T) for T in model.solutes]
 
 
 def create_solver(model: CmfModel):
@@ -207,7 +207,7 @@ def plotting(model, results):
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
 
     if model.mode == 'phosphorus':
-        simulation = iao.format_phosphorus_results(model, results.phosphorus_results)
+        simulation = iao.format_phosphorus_results(model, results.phosphorus_results, results.water_results)
         sim1 = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
                 simulation['pp_simulated_mcg_per_m3_mx+mp'])
         sim2 = (simulation['dip_simulated_state_per_m2_mx+mp'] + simulation['dop_simulated_state_per_m2_mx+mp'] +

@@ -296,21 +296,25 @@ class CmfModel(cmf.project):
             amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['PP [mcg/l]'].mean()))
 
     def layer_concentration(self, phosphorus_params):
+        """
+        state of solute in a WaterStorage is always the total state, thus the derivated concentration is depending on
+        the cell area (or, more precisely, the total water amount in the WaterStorage)
+        """
         i = 0
         for layer in self.c.layers:
             # layer.Solute(self.dip).set_adsorption(cmf.LinearAdsorption(0.1, 10))
             if self.layer_type[i] == 'Ah':
-                layer.Solute(self.dip).state = phosphorus_params.dip_state_ah
-                layer.Solute(self.dop).state = phosphorus_params.dop_state_ah
-                layer.Solute(self.pp).state = phosphorus_params.pp_state_ah
+                layer.Solute(self.dip).state = phosphorus_params.dip_state_ah * self.c.area
+                layer.Solute(self.dop).state = phosphorus_params.dop_state_ah * self.c.area
+                layer.Solute(self.pp).state = phosphorus_params.pp_state_ah * self.c.area
             elif self.layer_type[i] == 'Bv1':
-                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv1
-                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv1
-                layer.Solute(self.pp).state = phosphorus_params.pp_state_bv1
+                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv1 * self.c.area
+                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv1 * self.c.area
+                layer.Solute(self.pp).state = phosphorus_params.pp_state_bv1 * self.c.area
             elif self.layer_type[i] == 'Bv2':
-                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv2
-                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv2
-                layer.Solute(self.pp).state = phosphorus_params.pp_state_bv2
+                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv2 * self.c.area
+                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv2 * self.c.area
+                layer.Solute(self.pp).state = phosphorus_params.pp_state_bv2 * self.c.area
             i += 1
 
         if type(self.flow_approach) == MacroporeFastFlow:
