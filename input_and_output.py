@@ -129,19 +129,24 @@ def evaluation_phosphorus_df(evaluation):
     All concentrations are in micrograms per L, and all states are in micrograms!
     Careful: Results from CMF are AMOUNT/m3, so they need to be converted
     """
-    evaluation.rename(columns={'DIP [mcg/l]': 'dip_measured_mcg_per_L', 'DOP [mcg/l]': 'dop_measured_mcg_per_L',
-                               'PP [mcg/l]': 'pp_measured_mcg_per_L'}, inplace=True)
+    evaluation.rename(columns={'DP [mcg/l]': 'dp_measured_mcg_per_L', 'PP [mcg/l]': 'pp_measured_mcg_per_L'},
+                      inplace=True)
+    # evaluation.rename(columns={'DIP [mcg/l]': 'dip_measured_mcg_per_L', 'DOP [mcg/l]': 'dop_measured_mcg_per_L',
+    #                            'PP [mcg/l]': 'pp_measured_mcg_per_L'}, inplace=True)
 
     # concentration refers to mcg/L. To calculate mcg/m3, it needs to be multiplied with 1000 L/m3
-    evaluation['dip_measured_mcg_per_m3'] = evaluation['dip_measured_mcg_per_L'] * 1e3
-    evaluation['dop_measured_mcg_per_m3'] = evaluation['dop_measured_mcg_per_L'] * 1e3
+    evaluation['dp_measured_mcg_per_m3'] = evaluation['dp_measured_mcg_per_L'] * 1e3
+    # evaluation['dip_measured_mcg_per_m3'] = evaluation['dip_measured_mcg_per_L'] * 1e3
+    # evaluation['dop_measured_mcg_per_m3'] = evaluation['dop_measured_mcg_per_L'] * 1e3
     evaluation['pp_measured_mcg_per_m3'] = evaluation['pp_measured_mcg_per_L'] * 1e3
 
     # the state is the total amount of TRANSPORTED P per m2
-    evaluation['dip_measured_state_per_m2'] = evaluation['dip_measured_mcg_per_L'] * evaluation[
+    evaluation['dp_measured_state_per_m2'] = evaluation['dp_measured_mcg_per_L'] * evaluation[
         'amount_measured_l_per_m2']
-    evaluation['dop_measured_state_per_m2'] = evaluation['dop_measured_mcg_per_L'] * evaluation[
-        'amount_measured_l_per_m2']
+    # evaluation['dip_measured_state_per_m2'] = evaluation['dip_measured_mcg_per_L'] * evaluation[
+    #     'amount_measured_l_per_m2']
+    # evaluation['dop_measured_state_per_m2'] = evaluation['dop_measured_mcg_per_L'] * evaluation[
+    #     'amount_measured_l_per_m2']
     evaluation['pp_measured_state_per_m2'] = evaluation['pp_measured_mcg_per_L'] * evaluation[
         'amount_measured_l_per_m2']
     return evaluation
@@ -241,9 +246,11 @@ def format_phosphorus_results(approach, phosphorus_results, water_results):
     depth, layers = depth_and_layers(approach)
     # begin of the irrigation experiment
     begin = cmf.Time(12, 6, 2018, 10, 1)
-    simulation_results = {'dip_simulated_mcg_per_m3_mx+mp': [], 'dop_simulated_mcg_per_m3_mx+mp': [],
-                          'pp_simulated_mcg_per_m3_mx+mp': [], 'dip_simulated_state_per_m2_mx+mp': [],
-                          'dop_simulated_state_per_m2_mx+mp': [], 'pp_simulated_state_per_m2_mx+mp': []}
+    simulation_results = {'dp_simulated_mcg_per_m3_mx+mp': [], 'pp_simulated_mcg_per_m3_mx+mp': [],
+                          'dp_simulated_state_per_m2_mx+mp': [], 'pp_simulated_state_per_m2_mx+mp': []}
+    # simulation_results = {'dip_simulated_mcg_per_m3_mx+mp': [], 'dop_simulated_mcg_per_m3_mx+mp': [],
+    #                       'pp_simulated_mcg_per_m3_mx+mp': [], 'dip_simulated_state_per_m2_mx+mp': [],
+    #                       'dop_simulated_state_per_m2_mx+mp': [], 'pp_simulated_state_per_m2_mx+mp': []}
 
     for index, row in approach.evaluation_df.iterrows():
         i = layers[depth.index(row['depth [m]'])]

@@ -208,28 +208,42 @@ def plotting(model, results):
 
     if model.mode == 'phosphorus':
         simulation = iao.format_phosphorus_results(model, results.phosphorus_results, results.water_results)
-        sim1 = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
-                simulation['pp_simulated_mcg_per_m3_mx+mp'])
-        sim2 = (simulation['dip_simulated_state_per_m2_mx+mp'] + simulation['dop_simulated_state_per_m2_mx+mp'] +
-                simulation['pp_simulated_state_per_m2_mx+mp'])
-
-        sim_total = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
-                     simulation['pp_simulated_mcg_per_m3_mx+mp'] + simulation['dip_simulated_state_per_m2_mx+mp'] +
-                     simulation['dop_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
-
-        eval1 = (list(model.evaluation_df['dip_measured_mcg_per_m3']) +
-                 list(model.evaluation_df['dop_measured_mcg_per_m3']) +
+        sim1 = (simulation['dp_simulated_mcg_per_m3_mx+mp'] + simulation['pp_simulated_mcg_per_m3_mx+mp'])
+        sim2 = (simulation['dp_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
+        sim_total = (simulation['dp_simulated_mcg_per_m3_mx+mp'] + simulation['pp_simulated_mcg_per_m3_mx+mp'] +
+                     simulation['dp_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
+        eval1 = (list(model.evaluation_df['dp_measured_mcg_per_m3']) +
                  list(model.evaluation_df['pp_measured_mcg_per_m3']))
-        eval2 = (list(model.evaluation_df['dip_measured_state_per_m2']) +
-                 list(model.evaluation_df['dop_measured_state_per_m2']) +
+        eval2 = (list(model.evaluation_df['dp_measured_state_per_m2']) +
                  list(model.evaluation_df['pp_measured_state_per_m2']))
 
-        eval_total = (list(model.evaluation_df['dip_measured_mcg_per_m3']) +
-                      list(model.evaluation_df['dop_measured_mcg_per_m3']) +
+        eval_total = (list(model.evaluation_df['dp_measured_mcg_per_m3']) +
                       list(model.evaluation_df['pp_measured_mcg_per_m3']) +
-                      list(model.evaluation_df['dip_measured_state_per_m2']) +
-                      list(model.evaluation_df['dop_measured_state_per_m2']) +
+                      list(model.evaluation_df['dp_measured_state_per_m2']) +
                       list(model.evaluation_df['pp_measured_state_per_m2']))
+
+        # sim1 = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
+        #         simulation['pp_simulated_mcg_per_m3_mx+mp'])
+        # sim2 = (simulation['dip_simulated_state_per_m2_mx+mp'] + simulation['dop_simulated_state_per_m2_mx+mp'] +
+        #         simulation['pp_simulated_state_per_m2_mx+mp'])
+
+        # sim_total = (simulation['dip_simulated_mcg_per_m3_mx+mp'] + simulation['dop_simulated_mcg_per_m3_mx+mp'] +
+        #              simulation['pp_simulated_mcg_per_m3_mx+mp'] + simulation['dip_simulated_state_per_m2_mx+mp'] +
+        #              simulation['dop_simulated_state_per_m2_mx+mp'] + simulation['pp_simulated_state_per_m2_mx+mp'])
+
+        # eval1 = (list(model.evaluation_df['dip_measured_mcg_per_m3']) +
+        #          list(model.evaluation_df['dop_measured_mcg_per_m3']) +
+        #          list(model.evaluation_df['pp_measured_mcg_per_m3']))
+        # eval2 = (list(model.evaluation_df['dip_measured_state_per_m2']) +
+        #          list(model.evaluation_df['dop_measured_state_per_m2']) +
+        #          list(model.evaluation_df['pp_measured_state_per_m2']))
+        #
+        # eval_total = (list(model.evaluation_df['dip_measured_mcg_per_m3']) +
+        #               list(model.evaluation_df['dop_measured_mcg_per_m3']) +
+        #               list(model.evaluation_df['pp_measured_mcg_per_m3']) +
+        #               list(model.evaluation_df['dip_measured_state_per_m2']) +
+        #               list(model.evaluation_df['dop_measured_state_per_m2']) +
+        #               list(model.evaluation_df['pp_measured_state_per_m2']))
 
         ax[0].set_ylabel('phosphorus flux [mcg per m3 water]')
         ax[1].set_ylabel('phosphorus state [mcg per m2 soil]')

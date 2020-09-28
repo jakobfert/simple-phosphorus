@@ -161,7 +161,8 @@ class CmfModel(cmf.project):
         self.rain_station = self.create_rainfall_station(rain)
 
         if phosphorus_params:
-            self.dip, self.dop, self.pp = self.solutes
+            # self.dip, self.dop, self.pp = self.solutes
+            self.dp, self.pp = self.solutes
             self.matrix_filter(phosphorus_params)
             self.rainstation_concentration(irrigation, profile)
             self.layer_concentration(phosphorus_params)
@@ -288,10 +289,13 @@ class CmfModel(cmf.project):
     def rainstation_concentration(self, irrigation, profile):
         surface = iao.surface_df(source=Path('input/MIT_Surface.csv'), irrigation=irrigation, profile=profile)
 
-        self.rain_station.concentration[self.dip] = cmf.timeseries.from_scalar(
-            amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DIP [mcg/l]'].mean()))
-        self.rain_station.concentration[self.dop] = cmf.timeseries.from_scalar(
-            amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DOP [mcg/l]'].mean()))
+        self.rain_station.concentration[self.dp] = cmf.timeseries.from_scalar(
+            amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DP [mcg/l]'].mean()))
+
+        # self.rain_station.concentration[self.dip] = cmf.timeseries.from_scalar(
+        #     amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DIP [mcg/l]'].mean()))
+        # self.rain_station.concentration[self.dop] = cmf.timeseries.from_scalar(
+        #     amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DOP [mcg/l]'].mean()))
         self.rain_station.concentration[self.pp] = cmf.timeseries.from_scalar(
             amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['PP [mcg/l]'].mean()))
 
@@ -304,23 +308,27 @@ class CmfModel(cmf.project):
         for layer in self.c.layers:
             # layer.Solute(self.dip).set_adsorption(cmf.LinearAdsorption(0.1, 10))
             if self.layer_type[i] == 'Ah':
-                layer.Solute(self.dip).state = phosphorus_params.dip_state_ah * self.c.area
-                layer.Solute(self.dop).state = phosphorus_params.dop_state_ah * self.c.area
+                layer.Solute(self.dp).state = phosphorus_params.dp_state_ah * self.c.area
+                # layer.Solute(self.dip).state = phosphorus_params.dip_state_ah * self.c.area
+                # layer.Solute(self.dop).state = phosphorus_params.dop_state_ah * self.c.area
                 layer.Solute(self.pp).state = phosphorus_params.pp_state_ah * self.c.area
             elif self.layer_type[i] == 'Bv1':
-                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv1 * self.c.area
-                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv1 * self.c.area
+                layer.Solute(self.dp).state = phosphorus_params.dp_state_bv1 * self.c.area
+                # layer.Solute(self.dip).state = phosphorus_params.dip_state_bv1 * self.c.area
+                # layer.Solute(self.dop).state = phosphorus_params.dop_state_bv1 * self.c.area
                 layer.Solute(self.pp).state = phosphorus_params.pp_state_bv1 * self.c.area
             elif self.layer_type[i] == 'Bv2':
-                layer.Solute(self.dip).state = phosphorus_params.dip_state_bv2 * self.c.area
-                layer.Solute(self.dop).state = phosphorus_params.dop_state_bv2 * self.c.area
+                layer.Solute(self.dp).state = phosphorus_params.dp_state_bv2 * self.c.area
+                # layer.Solute(self.dip).state = phosphorus_params.dip_state_bv2 * self.c.area
+                # layer.Solute(self.dop).state = phosphorus_params.dop_state_bv2 * self.c.area
                 layer.Solute(self.pp).state = phosphorus_params.pp_state_bv2 * self.c.area
             i += 1
 
         if type(self.flow_approach) == MacroporeFastFlow:
             for mp in self.flow_approach.macropores:
-                mp.Solute(self.dip).state = 0  # I think "0" for macropores is correct: MPs are empty at the beginning
-                mp.Solute(self.dop).state = 0
+                mp.Solute(self.dp).state = 0
+                # mp.Solute(self.dip).state = 0  # I think "0" for macropores is correct: MPs are empty at the beginning
+                # mp.Solute(self.dop).state = 0
                 mp.Solute(self.pp).state = 0
 
     def layer_decay(self, phosphorus_params):
@@ -337,26 +345,31 @@ class CmfModel(cmf.project):
         Since water does not stay for long in macropores or bypass, conversions between P forms are only present in the
         soil layers
         """
-        dip_decay = phosphorus_params.dip_to_dop + phosphorus_params.dip_to_pp
-        dop_decay = phosphorus_params.dop_to_pp - phosphorus_params.dip_to_dop
-        pp_decay = -phosphorus_params.dip_to_pp - phosphorus_params.dop_to_pp
+        # dip_decay = phosphorus_params.dip_to_dop + phosphorus_params.dip_to_pp
+        # dop_decay = phosphorus_params.dop_to_pp - phosphorus_params.dip_to_dop
+        # pp_decay = -phosphorus_params.dip_to_pp - phosphorus_params.dop_to_pp
 
         for layer in self.c.layers:
-            layer.Solute(self.dip).decay = dip_decay
-            layer.Solute(self.dop).decay = dop_decay
-            layer.Solute(self.pp).decay = pp_decay
+            layer.Solute(self.dp).decay = phosphorus_params.dp_to_pp
+            layer.Solute(self.pp).decay = -phosphorus_params.dp_to_pp
+
+            # layer.Solute(self.dip).decay = dip_decay
+            # layer.Solute(self.dop).decay = dop_decay
+            # layer.Solute(self.pp).decay = pp_decay
 
     # -------------------------------------- FILTER FOR PHOSPHORUS --------------------------------------
     def matrix_filter(self, phosphorus_params):
         """
         1.0 is no filter and 0.0 means no solute is crossing this connection
         """
-        self.mx_infiltration.set_tracer_filter(self.dip, phosphorus_params.mx_filter_dp)
-        self.mx_infiltration.set_tracer_filter(self.dop, phosphorus_params.mx_filter_dp)
+        self.mx_infiltration.set_tracer_filter(self.dp, phosphorus_params.mx_filter_dp)
+        # self.mx_infiltration.set_tracer_filter(self.dip, phosphorus_params.mx_filter_dp)
+        # self.mx_infiltration.set_tracer_filter(self.dop, phosphorus_params.mx_filter_dp)
         self.mx_infiltration.set_tracer_filter(self.pp, phosphorus_params.mx_filter_pp)
         for layer in self.mx_percolation:
-            layer.set_tracer_filter(self.dip, phosphorus_params.mx_filter_dp)
-            layer.set_tracer_filter(self.dop, phosphorus_params.mx_filter_dp)
+            layer.set_tracer_filter(self.dp, phosphorus_params.mx_filter_dp)
+            # layer.set_tracer_filter(self.dip, phosphorus_params.mx_filter_dp)
+            # layer.set_tracer_filter(self.dop, phosphorus_params.mx_filter_dp)
             layer.set_tracer_filter(self.pp, phosphorus_params.mx_filter_pp)
 
     def bypass_filter(self, phosphorus_params):
@@ -364,27 +377,31 @@ class CmfModel(cmf.project):
         1.0 is no filter and 0.0 means no solute is crossing this connection
         """
         for bp in self.flow_approach.bypass:
-            bp.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
-            bp.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
+            bp.set_tracer_filter(self.dp, phosphorus_params.mp_filter_dp)
+            # bp.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
+            # bp.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
             bp.set_tracer_filter(self.pp, phosphorus_params.mp_filter_pp)
 
     def macropore_filter(self, phosphorus_params):
         """
         1.0 is no filter and 0.0 means no solute is crossing this connection
         """
-        self.flow_approach.mp_infiltration.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
-        self.flow_approach.mp_infiltration.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
+        self.flow_approach.mp_infiltration.set_tracer_filter(self.dp, phosphorus_params.mp_filter_dp)
+        # self.flow_approach.mp_infiltration.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
+        # self.flow_approach.mp_infiltration.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
         self.flow_approach.mp_infiltration.set_tracer_filter(self.pp, phosphorus_params.mp_filter_pp)
 
         # Do I nead a filter for dissolved P in the macropores? I think not?
         for mp in self.flow_approach.mp_percolation:
-            mp.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
-            mp.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
+            mp.set_tracer_filter(self.dp, phosphorus_params.mp_filter_dp)
+            # mp.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
+            # mp.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
             mp.set_tracer_filter(self.pp, phosphorus_params.mp_filter_pp)
 
         for mp in self.flow_approach.mp_mx_exchange:
-            mp.set_tracer_filter(self.dip, phosphorus_params.exch_filter_dp)
-            mp.set_tracer_filter(self.dop, phosphorus_params.exch_filter_dp)
+            mp.set_tracer_filter(self.dp, phosphorus_params.exch_filter_dp)
+            # mp.set_tracer_filter(self.dip, phosphorus_params.exch_filter_dp)
+            # mp.set_tracer_filter(self.dop, phosphorus_params.exch_filter_dp)
             mp.set_tracer_filter(self.pp, phosphorus_params.exch_filter_pp)
 
 
