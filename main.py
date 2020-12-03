@@ -455,31 +455,31 @@ class PhosphorusParameters:
         """
         # self.dip_state_ah = spotpy_set.pardip_state_ah if not spotpy_set.empty else 865  # 10
         # self.dop_state_ah = spotpy_set.pardop_state_ah if not spotpy_set.empty else 523  # 10
-        self.pp_state_ah = spotpy_set.parpp_state_ah if not spotpy_set.empty else 607  # 10
+        self.pp_state_ah = spotpy_set.parpp_state_ah if not spotpy_set.empty else 646.5  # 10
         # self.dip_state_bv1 = spotpy_set.pardip_state_bv1 if not spotpy_set.empty else 430  # 10
         # self.dop_state_bv1 = spotpy_set.pardop_state_bv1 if not spotpy_set.empty else 260  # 10
-        self.pp_state_bv1 = spotpy_set.parpp_state_bv1 if not spotpy_set.empty else 300  # 10
+        self.pp_state_bv1 = spotpy_set.parpp_state_bv1 if not spotpy_set.empty else 156.5  # 10
         # self.dip_state_bv2 = spotpy_set.pardip_state_bv2 if not spotpy_set.empty else 0.865  # 10
         # self.dop_state_bv2 = spotpy_set.pardop_state_bv2 if not spotpy_set.empty else 0.523  # 10
-        self.pp_state_bv2 = spotpy_set.parpp_state_bv2 if not spotpy_set.empty else 0.607  # 10
+        self.pp_state_bv2 = spotpy_set.parpp_state_bv2 if not spotpy_set.empty else 170.5  # 10
 
-        self.dp_state_ah = spotpy_set.pardp_state_ah if not spotpy_set.empty else 865  # 10
-        self.dp_state_bv1 = spotpy_set.pardp_state_bv1 if not spotpy_set.empty else 430  # 10
-        self.dp_state_bv2 = spotpy_set.pardp_state_bv2 if not spotpy_set.empty else 0.865  # 10
+        self.dp_state_ah = spotpy_set.pardp_state_ah if not spotpy_set.empty else 885.5  # 10
+        self.dp_state_bv1 = spotpy_set.pardp_state_bv1 if not spotpy_set.empty else 334  # 10
+        self.dp_state_bv2 = spotpy_set.pardp_state_bv2 if not spotpy_set.empty else 334.8  # 10
 
-        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 1.0  # 0.0815611  # 1
-        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.1  # 0.0984676  # 0.1
+        self.mx_filter_dp = spotpy_set.parmx_filter_dp if not spotpy_set.empty else 0.9165  # 0.0815611  # 1
+        self.mx_filter_pp = spotpy_set.parmx_filter_pp if not spotpy_set.empty else 0.2285  # 0.0984676  # 0.1
 
         # self.dip_to_dop = spotpy_set.pardip_to_dop if not spotpy_set.empty else 0
         # self.dip_to_pp = spotpy_set.pardip_to_pp if not spotpy_set.empty else 0
         # self.dop_to_pp = spotpy_set.pardop_to_pp if not spotpy_set.empty else 0
 
         if system == 2 or system == 3:
-            self.mp_filter_dp = spotpy_set.parmp_filter_dp if not spotpy_set.empty else 1
-            self.mp_filter_pp = spotpy_set.parmp_filter_pp if not spotpy_set.empty else 0.8
+            self.mp_filter_dp = spotpy_set.parmp_filter_dp if not spotpy_set.empty else 0.2141
+            self.mp_filter_pp = spotpy_set.parmp_filter_pp if not spotpy_set.empty else 0.000997
         if system == 3:
-            self.exch_filter_dp = spotpy_set.parexch_filter_dp if not spotpy_set.empty else 1
-            self.exch_filter_pp = spotpy_set.parexch_filter_pp if not spotpy_set.empty else 0.8
+            self.exch_filter_dp = spotpy_set.parexch_filter_dp if not spotpy_set.empty else 0.873
+            self.exch_filter_pp = spotpy_set.parexch_filter_pp if not spotpy_set.empty else 0.886
 
 
 # ------------------------------------------- CLASS FOR SINGLE RUN -------------------------------------------
@@ -524,7 +524,7 @@ if __name__ == '__main__':
 
     vgm_params_via_spotpy = True
 
-    use_spotpy = True
+    use_spotpy = False
     w_params_from_file = True
     p_params_from_file = False
 

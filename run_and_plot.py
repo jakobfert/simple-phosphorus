@@ -164,6 +164,43 @@ def create_solver(model: CmfModel):
     return cmf.CVodeKrylov(model, 1e-9)
 
 
+def save_to_csv(df, name):
+    """
+    This function is just for testing. It allows to save specific data to file for checking...
+    """
+    import csv
+    with open(name + '.csv', mode='w', newline='') as file:
+        w = csv.writer(file)
+        w.writerow(df.keys())
+        w.writerows(zip(*df.values()))
+
+    import math
+    min_val = math.inf
+    max_val = -math.inf
+    for key in df:
+        min_key = min(df[key])
+        max_key = max(df[key])
+        min_val = min_key if min_key < min_val else min_val
+        max_val = max_key if max_key > max_val else max_val
+
+    print('Maximum Value for ' + name + ': ', max_val)
+    print('Minimum Value for ' + name + ': ', min_val)
+
+
+def result_evaluation(model: CmfModel, df):
+    for s in model.solutes:
+        save_to_csv(df['concentration_mcg_per_m3_mx_' + s.Name], name='concentration_mcg_per_m3_mx_' + s.Name)
+        save_to_csv(df['concentration_flux_mcg_per_m3_mx_' + s.Name], name='concentration_flux_mcg_per_m3_mx_' + s.Name)
+        save_to_csv(df['simulated_state_mcg_per_m2_per_layer_mx_' + s.Name],
+                    name='simulated_state_mcg_per_m2_per_layer_mx_' + s.Name)
+        save_to_csv(df['concentration_mcg_per_m3_mp_' + s.Name], name='concentration_mcg_per_m3_mp_' + s.Name)
+        save_to_csv(df['concentration_flux_mcg_per_m3_mp_' + s.Name], name='concentration_flux_mcg_per_m3_mp_' + s.Name)
+        save_to_csv(df['simulated_state_mcg_per_m2_per_layer_mp_' + s.Name],
+                    name='simulated_state_mcg_per_m2_per_layer_mp_' + s.Name)
+        save_to_csv(df[s.Name + '_simulated_mcg_per_m3_mx+mp'], name=s.Name + '_simulated_mcg_per_m3_mx+mp')
+        save_to_csv(df[s.Name + '_simulated_state_per_m2_mx+mp'], name=s.Name + '_simulated_state_per_m2_mx+mp')
+
+
 def run(model: CmfModel, print_time=False):
     """
     Runs the model and saves results in previously generated xarray Datasets
@@ -199,6 +236,8 @@ def run(model: CmfModel, print_time=False):
     end_timestamp = time.time()
     if print_time:
         print('Run time: ', (end_timestamp - start_timestamp) / 60, ' min')
+
+    result_evaluation(model, phosphorus_results)
 
     return water_results, phosphorus_results
 

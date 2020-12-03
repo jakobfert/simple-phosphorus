@@ -163,6 +163,10 @@ class CmfModel(cmf.project):
         if phosphorus_params:
             # self.dip, self.dop, self.pp = self.solutes
             self.dp, self.pp = self.solutes
+            for s in self.solutes:
+                for layer in self.c.layers:
+                    layer.Solute(s).set_abs_errtol(100)
+
             self.matrix_filter(phosphorus_params)
             self.rainstation_concentration(irrigation, profile)
             self.layer_concentration(phosphorus_params)
