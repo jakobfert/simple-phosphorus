@@ -64,6 +64,9 @@ def fill_water_result_df(model: CmfModel, df, t):
     :return: filled df xarray
     """
     tstr = str(t)
+    for layer in model.c.layers:
+        layer.volume = 0 if layer.volume < 0 else layer.volume
+
     df['wetness_mx'][tstr] = model.c.layers.wetness.tolist()  # Volume of water per Volume of pores
     df['water_volume_l_per_m2_mx'][tstr] = model.c.layers.volume.tolist()
     df['percolation_l_per_m2_per_day_mx'][tstr] = model.c.layers.get_percolation(t).tolist()
@@ -74,6 +77,9 @@ def fill_water_result_df(model: CmfModel, df, t):
         df['surface_runoff_l_per_m2_per_day'][tstr] = model.surface_runoff.waterbalance(t)
 
     if type(model.flow_approach) == MacroporeFastFlow:
+        for mp in model.flow_approach.macropores:
+            mp.volume = 0 if mp.volume < 0 else mp.volume
+
         df['wetness_mp'][tstr] = model.flow_approach.macropores.wetness.tolist()
         df['water_volume_l_per_m2_mp'][tstr] = model.flow_approach.macropores.volume.tolist()
         df['percolation_l_per_m2_per_day_mp'][tstr] = model.flow_approach.macropores.percolation(t).tolist()
@@ -132,6 +138,13 @@ def fill_phosphorus_result_df(model: CmfModel, df, water_df, t):
     """
     tstr = str(t)
     for s in model.solutes:
+        if type(model.flow_approach) == MacroporeFastFlow:
+            for mp in model.flow_approach.macropores:
+                mp.Solute(s).state = 0 if mp.Solute(s).state < 0 else mp.Solute(s).state
+
+        for layer in model.c.layers:
+            layer.Solute(s).conc = 0 if layer.conc(s) < 0 else layer.conc(s)
+
         df['concentration_mcg_per_m3_mx_' + s.Name][tstr] = [layer.conc(s) for layer in model.c.layers]
         df['concentration_flux_mcg_per_m3_mx_' + s.Name][tstr] = [model.mx_infiltration.conc(t, s)] + [
             flux.conc(t, s) for flux in model.mx_percolation]
@@ -187,18 +200,32 @@ def save_to_csv(df, name):
     print('Minimum Value for ' + name + ': ', min_val)
 
 
-def result_evaluation(model: CmfModel, df):
+def result_evaluation(model: CmfModel, p, w):
+
+    save_to_csv(w['wetness_mx'], name='wetness_mx')
+    save_to_csv(w['wetness_mp'], name='wetness_mp')
+    save_to_csv(w['water_volume_l_per_m2_mx'], name='water_volume_l_per_m2_mx')
+    save_to_csv(w['water_volume_l_per_m2_mp'], name='water_volume_l_per_m2_mp')
+    save_to_csv(w['percolation_l_per_m2_per_day_mx'], name='percolation_l_per_m2_per_day_mx')
+    save_to_csv(w['percolation_l_per_m2_per_day_mp'], name='percolation_l_per_m2_per_day_mp')
+    # save_to_csv(w['gw_recharge_wb_l_per_m2_per_day'], name='gw_recharge_wb_l_per_m2_per_day')
+    # save_to_csv(w['gw_recharge_flux_l_per_m2_per_day'], name='gw_recharge_flux_l_per_m2_per_day')
+    # save_to_csv(w['surface_runoff_l_per_m2_per_day'], name='surface_runoff_l_per_m2_per_day')
+    # save_to_csv(w['infiltration_l_per_m2_per_day'], name='infiltration_l_per_m2_per_day')
+    save_to_csv(w['ex_l_per_m2_per_day_mp_mx'], name='ex_l_per_m2_per_day_mp_mx')
+    save_to_csv(w['simulated_flux_l_per_m2_per_day'], name='simulated_flux_l_per_m2_per_day')
+
     for s in model.solutes:
-        save_to_csv(df['concentration_mcg_per_m3_mx_' + s.Name], name='concentration_mcg_per_m3_mx_' + s.Name)
-        save_to_csv(df['concentration_flux_mcg_per_m3_mx_' + s.Name], name='concentration_flux_mcg_per_m3_mx_' + s.Name)
-        save_to_csv(df['simulated_state_mcg_per_m2_per_layer_mx_' + s.Name],
+        save_to_csv(p['concentration_mcg_per_m3_mx_' + s.Name], name='concentration_mcg_per_m3_mx_' + s.Name)
+        save_to_csv(p['concentration_flux_mcg_per_m3_mx_' + s.Name], name='concentration_flux_mcg_per_m3_mx_' + s.Name)
+        save_to_csv(p['simulated_state_mcg_per_m2_per_layer_mx_' + s.Name],
                     name='simulated_state_mcg_per_m2_per_layer_mx_' + s.Name)
-        save_to_csv(df['concentration_mcg_per_m3_mp_' + s.Name], name='concentration_mcg_per_m3_mp_' + s.Name)
-        save_to_csv(df['concentration_flux_mcg_per_m3_mp_' + s.Name], name='concentration_flux_mcg_per_m3_mp_' + s.Name)
-        save_to_csv(df['simulated_state_mcg_per_m2_per_layer_mp_' + s.Name],
+        save_to_csv(p['concentration_mcg_per_m3_mp_' + s.Name], name='concentration_mcg_per_m3_mp_' + s.Name)
+        save_to_csv(p['concentration_flux_mcg_per_m3_mp_' + s.Name], name='concentration_flux_mcg_per_m3_mp_' + s.Name)
+        save_to_csv(p['simulated_state_mcg_per_m2_per_layer_mp_' + s.Name],
                     name='simulated_state_mcg_per_m2_per_layer_mp_' + s.Name)
-        save_to_csv(df[s.Name + '_simulated_mcg_per_m3_mx+mp'], name=s.Name + '_simulated_mcg_per_m3_mx+mp')
-        save_to_csv(df[s.Name + '_simulated_state_per_m2_mx+mp'], name=s.Name + '_simulated_state_per_m2_mx+mp')
+        save_to_csv(p[s.Name + '_simulated_mcg_per_m3_mx+mp'], name=s.Name + '_simulated_mcg_per_m3_mx+mp')
+        save_to_csv(p[s.Name + '_simulated_state_per_m2_mx+mp'], name=s.Name + '_simulated_state_per_m2_mx+mp')
 
 
 def run(model: CmfModel, print_time=False):
@@ -237,7 +264,7 @@ def run(model: CmfModel, print_time=False):
     if print_time:
         print('Run time: ', (end_timestamp - start_timestamp) / 60, ' min')
 
-    result_evaluation(model, phosphorus_results)
+    result_evaluation(model, phosphorus_results, water_results)
 
     return water_results, phosphorus_results
 
