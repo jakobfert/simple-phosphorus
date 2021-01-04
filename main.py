@@ -524,7 +524,7 @@ if __name__ == '__main__':
 
     vgm_params_via_spotpy = True
 
-    use_spotpy = True
+    use_spotpy = False
     w_params_from_file = True
     p_params_from_file = False
 
