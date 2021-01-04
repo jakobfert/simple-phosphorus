@@ -174,7 +174,7 @@ def create_solver(model: CmfModel):
     :param model: CmfModel
     :return: cmf.CVodeKrylov
     """
-    return cmf.CVodeKrylov(model, 1e-9)
+    return cmf.CVodeKrylov(model, 1e-7)  #1e-9)
 
 
 def save_to_csv(df, name):
@@ -247,7 +247,7 @@ def run(model: CmfModel, print_time=False):
         phosphorus_results = False
 
     i = 0
-    for t in solver.run(model.begin, model.tend, model.dt):
+    for t in solver.run(start=model.begin, end=model.tend, step=model.dt, max_errors=10):
         if (time.time() - start_timestamp) >= 15 * 60:  # 10 minutes (in seconds)
             print('Timeout Error')
             return False, False

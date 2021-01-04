@@ -165,7 +165,7 @@ class CmfModel(cmf.project):
             self.dp, self.pp = self.solutes
             for s in self.solutes:
                 for layer in self.c.layers:
-                    layer.Solute(s).set_abs_errtol(100)
+                    layer.Solute(s).set_abs_errtol(10)
 
             self.matrix_filter(phosphorus_params)
             self.rainstation_concentration(irrigation, profile)
