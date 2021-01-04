@@ -195,9 +195,9 @@ def save_to_csv(df, name):
         max_key = max(df[key])
         min_val = min_key if min_key < min_val else min_val
         max_val = max_key if max_key > max_val else max_val
-
-    print('Maximum Value for ' + name + ': ', max_val)
-    print('Minimum Value for ' + name + ': ', min_val)
+    #
+    # print('Maximum Value for ' + name + ': ', max_val)
+    # print('Minimum Value for ' + name + ': ', min_val)
 
 
 def result_evaluation(model: CmfModel, p, w):
@@ -314,9 +314,9 @@ def plotting(model, results):
         ax[0].set_ylabel('phosphorus flux [mcg per m3 water]')
         ax[1].set_ylabel('phosphorus state [mcg per m2 soil]')
 
-        print('RRMSE mcg per m3: ', rrmse(eval1, sim1))
-        print('RRMSE P state: ', rrmse(eval2, sim2))
-        print('RRMSE total: ', rrmse(eval_total, sim_total))
+        # print('RRMSE mcg per m3: ', rrmse(eval1, sim1))
+        # print('RRMSE P state: ', rrmse(eval2, sim2))
+        # print('RRMSE total: ', rrmse(eval_total, sim_total))
     else:
         simulation = iao.format_water_results(model, results.water_results)
         sim1 = simulation['simulated_flux_l_per_m2_per_day']
@@ -333,9 +333,9 @@ def plotting(model, results):
         ax[0].set_ylabel('water flux [L m-2 s-1]')
         ax[1].set_ylabel('water amount [L m-2]')
 
-        print('RRMSE flux [L m-2 day-1]: ', rrmse(eval1, sim1))
-        print('RRMSE amount [L m-2]: ', rrmse(eval2, sim2))
-        print('RRMSE total: ', rrmse(eval_total, sim_total))
+        # print('RRMSE flux [L m-2 day-1]: ', rrmse(eval1, sim1))
+        # print('RRMSE amount [L m-2]: ', rrmse(eval2, sim2))
+        # print('RRMSE total: ', rrmse(eval_total, sim_total))
 
     ax[0].plot(sim1, linestyle='-', color='green', label='simulated')
     ax[0].plot(eval1, linestyle='--', color='red', label='measured')
