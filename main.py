@@ -133,7 +133,7 @@ def water_and_phosphorus():
                 # UNCLEAR INDEX: this works only when BOTH water and phosphorus are taken from file
                 index = int(sys.argv[7]) if len(sys.argv) == 8 else 0
                 file = Path('results/SELECTION_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
-                phos_name = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
+                phos_name = 'results/LHS_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
                 # IMPORTANT: value should be 0.01 with real dataset, not 0.1!
                 db = create_params_from_file(phos_name, file, method='percentage', value=0.01)
                 phosphorus = PhosphorusParameters(spotpy_set=db.iloc[[index]], system=fastflow)
@@ -145,8 +145,8 @@ def water_and_phosphorus():
     if water_or_phosphorus == 'phosphorus' or (water_or_phosphorus == 'water' and not use_spotpy):
         if w_params_from_file:  # take parameters from file (by index)
             index = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
-            file = Path('results/SELECTION_MC_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
-            water_name = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
+            file = Path('results/SELECTION_LHS_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv')
+            water_name = 'results/LHS_water_FF' + str(fastflow) + '_P' + str(prof) + '.csv'
             # IMPORTANT: value should be 0.01 with real dataset, not 0.1!
             # db = create_params_from_file(water_name, file, method='percentage', value=0.01)
             db = create_params_from_file(water_name, file, method='number', value=10)
@@ -526,21 +526,21 @@ if __name__ == '__main__':
     w_params, p_params = water_and_phosphorus()
 
     if water_or_phosphorus == 'water':
-        dbname = 'results/MC_water_FF' + str(fastflow) + '_P' + str(prof)
+        dbname = 'results/LHS_water_FF' + str(fastflow) + '_P' + str(prof)
     else:
         if w_params_from_file:
             appendix = int(sys.argv[6]) if len(sys.argv) >= 7 else 0
-            dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_I' + str(appendix)
+            dbname = 'results/LHS_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_I' + str(appendix)
         else:
-            dbname = 'results/MC_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_test'
+            dbname = 'results/LHS_phosphorus_FF' + str(fastflow) + '_P' + str(prof) + '_test'
 
     setup = ModelInterface(water_params=w_params, spotpy_soil_params=vgm_params_via_spotpy,
                            irrigation=irr, profile=prof, flow_approach=fastflow, mode=water_or_phosphorus,
                            file_name=dbname)
 
     if use_spotpy:
-        # sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
-        sampler = spotpy.algorithms.mc(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
+        sampler = spotpy.algorithms.lhs(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
+        # sampler = spotpy.algorithms.mc(setup, parallel=parallel(), dbname=dbname, dbformat='csv')
         sampler.sample(runs)
 
         eval_list = ModelInterface.evaluation(setup)
