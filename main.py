@@ -186,7 +186,7 @@ class ModelInterface:
         else:
             self.phosphorus_params = None
 
-        self.begin = cmf.Time(12, 6, 2018, 9, 00)  # starting time of solute_results
+        self.begin = cmf.Time(12, 6, 2018, 0, 00)  # starting time of solute_results
         self.dt = cmf.min  # time steps (cmf.sec, cmf.min, cmf.h, cmf.day, cmf.week, cmf.month, cmf.year)
 
         self.evaluation_df = iao.evaluation_water_df(source=Path('input/MIT_Evaluation.csv'),
@@ -210,7 +210,7 @@ class ModelInterface:
         Here, spotpy parameters for simulation of phosphorus are created.
         All states are in micrograms! Filter: 1: solute can cross barrier completely; 0: no solute is crossing
         """
-        param_list = [u(name='saturated_depth', low=1.0, high=10.0, default=4.5, doc='saturated depth at beginning'),
+        param_list = [u(name='saturated_depth', low=1.0, high=20.0, default=4.5, doc='saturated depth at beginning'),
                       u(name='puddle_depth', low=0.0, high=0.01, default=0.002,
                         doc='water depth at which runoff starts [m]'),
                       u(name='porosity_mx_ah', low=0.001, high=0.9, default=0.1,
@@ -262,7 +262,7 @@ class ModelInterface:
         elif self.flow_approach == 3:
             param_list.extend(
                 [u(name='ksat_mp', low=1, high=240, default=10, doc='saturated conductivity of macropores [m/day]'),
-                 u(name='porefraction_mp', low=0.1, high=1.0, default=0.2, doc='macropore fraction [m3/m3]'),
+                 u(name='porefraction_mp', low=0.001, high=1.0, default=0.2, doc='macropore fraction [m3/m3]'),
                  u(name='density_mp', low=0.001, high=1.0, default=0.05,
                    doc='mean distance between the macropores [m]'),
                  u(name='k_shape', low=0.0, high=1.0, default=0.0,
@@ -338,21 +338,16 @@ class ModelInterface:
 
         phosphorus_params, water_params = self.set_parameters(vector)
 
-        try:
-            self.project = CmfModel(water_params=water_params,
-                                    phosphorus_params=phosphorus_params,
-                                    spotpy_soil_params=self.spotpy_soil_params,
-                                    irrigation=self.irrigation,
-                                    profile=self.profile,
-                                    fast_component=self.flow_approach,
-                                    tracer=self.tracer,
-                                    begin=self.begin,
-                                    cell=(0, 0, 0, 1000, True),  # IMPORTANT: now the area is 1000 m2
-                                    surface_runoff=True)
-        except:
-            print('Setup Error')
-            iao.append_error_file(spotpy=vector, name=self.error_file, error='SetupError')
-            return empty_list
+        self.project = CmfModel(water_params=water_params,
+                                phosphorus_params=phosphorus_params,
+                                spotpy_soil_params=self.spotpy_soil_params,
+                                irrigation=self.irrigation,
+                                profile=self.profile,
+                                fast_component=self.flow_approach,
+                                tracer=self.tracer,
+                                begin=self.begin,
+                                cell=(0, 0, 0, 1000, True),  # IMPORTANT: now the area is 1000 m2
+                                surface_runoff=True)
 
         try:
             water_results, phosphorus_results = rap.run(self.project, print_time=False)

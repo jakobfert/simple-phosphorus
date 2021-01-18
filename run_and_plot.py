@@ -264,7 +264,7 @@ def run(model: CmfModel, print_time=False):
     if print_time:
         print('Run time: ', (end_timestamp - start_timestamp) / 60, ' min')
 
-    result_evaluation(model, phosphorus_results, water_results)
+    # result_evaluation(model, phosphorus_results, water_results)
 
     return water_results, phosphorus_results
 

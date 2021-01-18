@@ -128,7 +128,7 @@ class CmfModel(cmf.project):
         self.begin = begin
         self.dt = cmf.min
 
-        rain = iao.irrigation_experiment(self.begin, self.dt, fade_out=2 * 60)
+        rain = iao.irrigation_experiment(self.begin, self.dt, startup=10*60, fade_out=2 * 60)
         self.duration = len(rain)
         self.tend = self.begin + self.dt * self.duration
 
