@@ -10,9 +10,6 @@ In main.py, the model will be created by choosing from the options given here.
 
 import cmf
 import numpy as np
-from math import sqrt
-from pathlib import Path
-import input_and_output as iao
 
 
 # ------------------------------------------- FLOW OPTION 2: BYPASS -------------------------------------------
@@ -104,9 +101,6 @@ class CmfModel(cmf.project):
 
     def __init__(self, water_params=None,
                  phosphorus_params=None,
-                 spotpy_soil_params=False,
-                 irrigation=1,
-                 profile=1,
                  fast_component=3,
                  tracer='',
                  begin=cmf.Time(1, 1, 2019, 0, 00),
@@ -128,7 +122,10 @@ class CmfModel(cmf.project):
         self.begin = begin
         self.dt = cmf.min
 
-        rain = iao.irrigation_experiment(self.begin, self.dt, startup=10*60, fade_out=2 * 60)
+        rain_times = (60 * [0.]  # 60 minutes dry
+                      + 40 * ([2. * 10 * 24] + 5 * [0.])  # 40 times 1 minute of rain and 5 without = 4h
+                      + 19 * 60 * [0.])  # 19 hours without rain = a total of 24 h of simulation time
+        rain = cmf.timeseries.from_array(self.begin, self.dt, data=rain_times)
         self.duration = len(rain)
         self.tend = self.begin + self.dt * self.duration
 
@@ -136,8 +133,8 @@ class CmfModel(cmf.project):
 
         self.c = self.NewCell(*cell)
 
-        soil = iao.real_soil_from_csv(soil_file=Path('input/MIT' + str(profile) + '_soil.csv'))
-        self.layer_boundary, self.layer_type = self.create_layers(soil, water_params, based_on_spotpy=spotpy_soil_params)
+        horizon_depths = [0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28]  # , 2.56, 5.12, 10.24]
+        self.create_layers(horizon_depths, water_params)
         self.mx_infiltration, self.mx_percolation = self.connect_matrix()
 
         self.gw = self.create_groundwater()
@@ -153,92 +150,58 @@ class CmfModel(cmf.project):
         self.c.surfacewater.puddledepth = water_params.puddle_depth
         self.c.saturated_depth = water_params.saturated_depth
 
-        if surface_runoff:
-            self.surface_runoff = self.create_surface_runoff()
-        else:
-            self.surface_runoff = False
-
         self.rain_station = self.create_rainfall_station(rain)
 
-        if phosphorus_params:
-            # self.dip, self.dop, self.pp = self.solutes
-            self.dp, self.pp = self.solutes
-            for s in self.solutes:
-                for layer in self.c.layers:
-                    layer.Solute(s).set_abs_errtol(10)
+        self.dp, self.pp = self.solutes
+        # for s in self.solutes:
+        #     for layer in self.c.layers:
+        #         layer.Solute(s).set_abs_errtol(10)
 
-            self.matrix_filter(phosphorus_params)
-            self.rainstation_concentration(irrigation, profile)
-            self.layer_concentration(phosphorus_params)
-            # self.layer_decay(phosphorus_params)
-            if type(self.flow_approach) == BypassFastFlow:
-                self.bypass_filter(phosphorus_params)
-            elif type(self.flow_approach) == MacroporeFastFlow:
-                self.macropore_filter(phosphorus_params)
+        self.matrix_filter(phosphorus_params)
+        self.rainstation_concentration()
+        self.layer_concentration(horizon_depths, phosphorus_params)
+        # self.layer_decay(phosphorus_params)
+
+        if type(self.flow_approach) == BypassFastFlow:
+            self.bypass_filter(phosphorus_params)
+        elif type(self.flow_approach) == MacroporeFastFlow:
+            self.macropore_filter(phosphorus_params)
 
     # -------------------------------------- CREATING AND CONNECTION SOIL LAYERS --------------------------------------
-    def create_layers(self, soil_horizons, params, based_on_spotpy=False):
+    def create_layers(self, soil_horizons, params):
         """
         Creates a list of layers with attributes taken from a csv file (created via Brook90).
 
         :param params: class containing all parameters
-        :param based_on_spotpy:
         :param soil_horizons: data frame including Van-Genuchten-Mualem soil parameters
         :return: A list of the lower boundaries of all created layer
         """
-        layer_boundary = []
-        layer_type = []
 
-        for i, row in soil_horizons.iterrows():
-            depth = -soil_horizons['Depth(m)'][i]  # for positive values
-            if depth > 0:
-                layer_boundary.append(depth)
-                layer_type.append(row['HorId'])
+        for depth in soil_horizons:
+            if depth <= 0.1:
+                phi = params.porosity_mx_ah
+                w0 = params.w0_ah
+                k = params.ksat_mx_ah
+                alpha = params.alpha_ah
+                n = params.n_ah
+                m = params.m_ah
+            elif depth <= 0.5:
+                phi = params.porosity_mx_bv1
+                w0 = params.w0_bv1
+                k = params.ksat_mx_bv1
+                alpha = params.alpha_bv1
+                n = params.n_bv1
+                m = params.m_bv1
+            else:
+                phi = params.porosity_mx_bv2
+                w0 = params.w0_bv2
+                k = params.ksat_mx_bv2
+                alpha = params.alpha_bv2
+                n = params.n_bv2
+                m = params.m_bv2
 
-                if row['HorId'] == 'Ah':
-                    phi = params.porosity_mx_ah
-                    w0 = params.w0_ah
-                elif row['HorId'] == 'Bv1':
-                    phi = params.porosity_mx_bv1
-                    w0 = params.w0_bv1
-                elif row['HorId'] == 'Bv2':
-                    phi = params.porosity_mx_bv2
-                    w0 = params.w0_bv2
-                else:
-                    phi = (params.porosity_mx_ah + params.porosity_mx_bv1 + params.porosity_mx_bv2) / 3
-                    w0 = (params.w0_ah + params.w0_bv1 + params.w0_bv2) / 3
-
-                if based_on_spotpy:
-                    if row['HorId'] == 'Ah':
-                        k = params.ksat_mx_ah
-                        alpha = params.alpha_ah
-                        n = params.n_ah
-                        m = params.m_ah
-                    elif row['HorId'] == 'Bv1':
-                        k = params.ksat_mx_bv1
-                        alpha = params.alpha_bv1
-                        n = params.n_bv1
-                        m = params.m_bv1
-                    elif row['HorId'] == 'Bv2':
-                        k = params.ksat_mx_bv2
-                        alpha = params.alpha_bv2
-                        n = params.n_bv2
-                        m = params.m_bv2
-                    else:
-                        k = (params.ksat_mx_ah + params.ksat_mx_bv1 + params.ksat_mx_bv2) / 3
-                        alpha = (params.alpha_ah + params.alpha_bv1 + params.alpha_bv2) / 3
-                        n = (params.n_ah + params.n_bv1 + params.n_bv2) / 3
-                        m = (params.m_ah + params.m_bv1 + params.m_bv2) / 3
-                else:
-                    k = row['KS/KF[m/d]']
-                    alpha = row['Alfa/PsiF[m-1]/[kPa]'] / 100
-                    n = row['n/b']
-                    m = 1 - 1 / n
-
-                vgm = cmf.VanGenuchtenMualem(Ksat=k, phi=phi, alpha=alpha, n=n, m=m, w0=w0)
-                self.c.add_layer(depth, vgm)
-
-        return layer_boundary, layer_type
+            vgm = cmf.VanGenuchtenMualem(Ksat=k, phi=phi, alpha=alpha, n=n, m=m, w0=w0)
+            self.c.add_layer(depth, vgm)
 
     def connect_matrix(self):
         """
@@ -265,19 +228,6 @@ class CmfModel(cmf.project):
         cmf.FreeDrainagePercolation(self.c.layers[-1], gw)
         return gw
 
-    def create_surface_runoff(self):
-        """
-        If a topographic slope exists surface water can runoff to another outlet.
-        https://philippkraft.github.io/cmf/cmf_tut_kinematic_wave.html
-        """
-        surface_outlet = self.NewOutlet('surface', self.c.x - 0.5, self.c.y - 0.5, self.c.z - 0.5)
-
-        cmf.KinematicSurfaceRunoff(self.c.surfacewater, surface_outlet, flowwidth=sqrt(self.c.area))
-
-        # I deleted the PowerLawEquation, since this needed so many unknown parameters...
-
-        return surface_outlet
-
     def create_rainfall_station(self, rain):
         """
         Creates a cmf.RainfallStation from a list of rainfall data and sets concentration of Pd and Pc
@@ -290,76 +240,59 @@ class CmfModel(cmf.project):
         return rain_station
 
     # -------------------------------------- CONCENTRATION OF PHOSPHORUS AT T0 --------------------------------------
-    def rainstation_concentration(self, irrigation, profile):
-        surface = iao.surface_df(source=Path('input/MIT_Surface.csv'), irrigation=irrigation, profile=profile)
+    def rainstation_concentration(self):
+        self.rain_station.concentration[self.dp] = cmf.timeseries.from_scalar(1000)
 
-        self.rain_station.concentration[self.dp] = cmf.timeseries.from_scalar(
-            amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DP [mcg/l]'].mean()))
+        self.rain_station.concentration[self.pp] = cmf.timeseries.from_scalar(1000)
 
-        # self.rain_station.concentration[self.dip] = cmf.timeseries.from_scalar(
-        #     amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DIP [mcg/l]'].mean()))
-        # self.rain_station.concentration[self.dop] = cmf.timeseries.from_scalar(
-        #     amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['DOP [mcg/l]'].mean()))
-        self.rain_station.concentration[self.pp] = cmf.timeseries.from_scalar(
-            amount_per_l_to_amount_per_m3(surface[surface['depth [m]'] == 'BLANK']['PP [mcg/l]'].mean()))
-
-    def layer_concentration(self, phosphorus_params):
+    def layer_concentration(self, horizon_depths, phosphorus_params):
         """
         state of solute in a WaterStorage is always the total state, thus the derivated concentration is depending on
         the cell area (or, more precisely, the total water amount in the WaterStorage)
         """
         i = 0
         for layer in self.c.layers:
-            # layer.Solute(self.dip).set_adsorption(cmf.LinearAdsorption(0.1, 10))
-            if self.layer_type[i] == 'Ah':
+            if horizon_depths[i] <= 0.1:
                 layer.Solute(self.dp).state = phosphorus_params.dp_state_ah * self.c.area
-                # layer.Solute(self.dip).state = phosphorus_params.dip_state_ah * self.c.area
-                # layer.Solute(self.dop).state = phosphorus_params.dop_state_ah * self.c.area
                 layer.Solute(self.pp).state = phosphorus_params.pp_state_ah * self.c.area
-            elif self.layer_type[i] == 'Bv1':
+            elif horizon_depths[i] <= 0.5:
                 layer.Solute(self.dp).state = phosphorus_params.dp_state_bv1 * self.c.area
-                # layer.Solute(self.dip).state = phosphorus_params.dip_state_bv1 * self.c.area
-                # layer.Solute(self.dop).state = phosphorus_params.dop_state_bv1 * self.c.area
                 layer.Solute(self.pp).state = phosphorus_params.pp_state_bv1 * self.c.area
-            elif self.layer_type[i] == 'Bv2':
+            else:
                 layer.Solute(self.dp).state = phosphorus_params.dp_state_bv2 * self.c.area
-                # layer.Solute(self.dip).state = phosphorus_params.dip_state_bv2 * self.c.area
-                # layer.Solute(self.dop).state = phosphorus_params.dop_state_bv2 * self.c.area
                 layer.Solute(self.pp).state = phosphorus_params.pp_state_bv2 * self.c.area
             i += 1
 
         if type(self.flow_approach) == MacroporeFastFlow:
             for mp in self.flow_approach.macropores:
                 mp.Solute(self.dp).state = 0
-                # mp.Solute(self.dip).state = 0  # I think "0" for macropores is correct: MPs are empty at the beginning
-                # mp.Solute(self.dop).state = 0
                 mp.Solute(self.pp).state = 0
 
-    def layer_decay(self, phosphorus_params):
-        """
-        Folgende Übergänge existieren:
-        DIP <-> DOP [param: dip_to_dop]
-        DIP <-> PP [param: dip_to_pp]
-        DOP <-> PP [param: dop_to_pp]
-
-        You give decay rates (positive). Thus, a positive value means DECREASE, a negative value means INCREASE.
-        Thus: for dop_decay it is minus because direction of dip_to_dop is TOWARDS DOP.
-        for pp_decay, both parameters are negative, because both directions are TOWARDS PP.
-
-        Since water does not stay for long in macropores or bypass, conversions between P forms are only present in the
-        soil layers
-        """
-        # dip_decay = phosphorus_params.dip_to_dop + phosphorus_params.dip_to_pp
-        # dop_decay = phosphorus_params.dop_to_pp - phosphorus_params.dip_to_dop
-        # pp_decay = -phosphorus_params.dip_to_pp - phosphorus_params.dop_to_pp
-
-        for layer in self.c.layers:
-            layer.Solute(self.dp).decay = phosphorus_params.dp_to_pp
-            layer.Solute(self.pp).decay = -phosphorus_params.dp_to_pp
-
-            # layer.Solute(self.dip).decay = dip_decay
-            # layer.Solute(self.dop).decay = dop_decay
-            # layer.Solute(self.pp).decay = pp_decay
+    # def layer_decay(self, phosphorus_params):
+    #     """
+    #     Folgende Übergänge existieren:
+    #     DIP <-> DOP [param: dip_to_dop]
+    #     DIP <-> PP [param: dip_to_pp]
+    #     DOP <-> PP [param: dop_to_pp]
+    #
+    #     You give decay rates (positive). Thus, a positive value means DECREASE, a negative value means INCREASE.
+    #     Thus: for dop_decay it is minus because direction of dip_to_dop is TOWARDS DOP.
+    #     for pp_decay, both parameters are negative, because both directions are TOWARDS PP.
+    #
+    #     Since water does not stay for long in macropores or bypass, conversions between P forms are only present in the
+    #     soil layers
+    #     """
+    #     # dip_decay = phosphorus_params.dip_to_dop + phosphorus_params.dip_to_pp
+    #     # dop_decay = phosphorus_params.dop_to_pp - phosphorus_params.dip_to_dop
+    #     # pp_decay = -phosphorus_params.dip_to_pp - phosphorus_params.dop_to_pp
+    #
+    #     for layer in self.c.layers:
+    #         layer.Solute(self.dp).decay = phosphorus_params.dp_to_pp
+    #         layer.Solute(self.pp).decay = -phosphorus_params.dp_to_pp
+    #
+    #         # layer.Solute(self.dip).decay = dip_decay
+    #         # layer.Solute(self.dop).decay = dop_decay
+    #         # layer.Solute(self.pp).decay = pp_decay
 
     # -------------------------------------- FILTER FOR PHOSPHORUS --------------------------------------
     def matrix_filter(self, phosphorus_params):
@@ -367,13 +300,9 @@ class CmfModel(cmf.project):
         1.0 is no filter and 0.0 means no solute is crossing this connection
         """
         self.mx_infiltration.set_tracer_filter(self.dp, phosphorus_params.mx_filter_dp)
-        # self.mx_infiltration.set_tracer_filter(self.dip, phosphorus_params.mx_filter_dp)
-        # self.mx_infiltration.set_tracer_filter(self.dop, phosphorus_params.mx_filter_dp)
         self.mx_infiltration.set_tracer_filter(self.pp, phosphorus_params.mx_filter_pp)
         for layer in self.mx_percolation:
             layer.set_tracer_filter(self.dp, phosphorus_params.mx_filter_dp)
-            # layer.set_tracer_filter(self.dip, phosphorus_params.mx_filter_dp)
-            # layer.set_tracer_filter(self.dop, phosphorus_params.mx_filter_dp)
             layer.set_tracer_filter(self.pp, phosphorus_params.mx_filter_pp)
 
     def bypass_filter(self, phosphorus_params):
@@ -382,8 +311,6 @@ class CmfModel(cmf.project):
         """
         for bp in self.flow_approach.bypass:
             bp.set_tracer_filter(self.dp, phosphorus_params.mp_filter_dp)
-            # bp.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
-            # bp.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
             bp.set_tracer_filter(self.pp, phosphorus_params.mp_filter_pp)
 
     def macropore_filter(self, phosphorus_params):
@@ -391,35 +318,13 @@ class CmfModel(cmf.project):
         1.0 is no filter and 0.0 means no solute is crossing this connection
         """
         self.flow_approach.mp_infiltration.set_tracer_filter(self.dp, phosphorus_params.mp_filter_dp)
-        # self.flow_approach.mp_infiltration.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
-        # self.flow_approach.mp_infiltration.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
         self.flow_approach.mp_infiltration.set_tracer_filter(self.pp, phosphorus_params.mp_filter_pp)
 
         # Do I nead a filter for dissolved P in the macropores? I think not?
         for mp in self.flow_approach.mp_percolation:
             mp.set_tracer_filter(self.dp, phosphorus_params.mp_filter_dp)
-            # mp.set_tracer_filter(self.dip, phosphorus_params.mp_filter_dp)
-            # mp.set_tracer_filter(self.dop, phosphorus_params.mp_filter_dp)
             mp.set_tracer_filter(self.pp, phosphorus_params.mp_filter_pp)
 
         for mp in self.flow_approach.mp_mx_exchange:
             mp.set_tracer_filter(self.dp, phosphorus_params.exch_filter_dp)
-            # mp.set_tracer_filter(self.dip, phosphorus_params.exch_filter_dp)
-            # mp.set_tracer_filter(self.dop, phosphorus_params.exch_filter_dp)
             mp.set_tracer_filter(self.pp, phosphorus_params.exch_filter_pp)
-
-
-# -----------------------------------------------------------------------------------------------------
-# ------------------------------------------- CHANGING UNITS ------------------------------------------
-
-
-def amount_per_l_to_amount_per_m3(mcg_per_l):
-    """
-    CMF always calculates concentrations in AMOUNT per m3. Since input units are in L, this function re-calculates it
-    to AMOUNT/m3 [AMOUNT is usually mcg].
-
-    :param mcg_per_l: concentration in mcg per l
-    :return: concentration of solute in mcg per m3
-    """
-    return mcg_per_l * 1e3
-

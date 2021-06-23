@@ -73,8 +73,6 @@ def fill_water_result_df(model: CmfModel, df, t):
     df['gw_recharge_wb_l_per_m2_per_day'][tstr] = model.gw.waterbalance(t)
     df['gw_recharge_flux_l_per_m2_per_day'][tstr] = model.c.layers[-1].flux_to(model.gw, t)
     df['infiltration_l_per_m2_per_day'][tstr] = model.c.surfacewater.flux_to(model.c.layers[0], t)
-    if model.surface_runoff:
-        df['surface_runoff_l_per_m2_per_day'][tstr] = model.surface_runoff.waterbalance(t)
 
     if type(model.flow_approach) == MacroporeFastFlow:
         for mp in model.flow_approach.macropores:
@@ -174,7 +172,7 @@ def create_solver(model: CmfModel):
     :param model: CmfModel
     :return: cmf.CVodeKrylov
     """
-    return cmf.CVodeKrylov(model, 1e-7)  #1e-9)
+    return cmf.CVodeKrylov(model, 1e-9)  # 1e-9)
 
 
 def save_to_csv(df, name):
@@ -248,7 +246,7 @@ def run(model: CmfModel, print_time=False):
 
     i = 0
     for t in solver.run(start=model.begin, end=model.tend, step=model.dt, max_errors=10):
-        if (time.time() - start_timestamp) >= 15 * 60:  # 10 minutes (in seconds)
+        if (time.time() - start_timestamp) >= 10 * 60:  # 10 minutes (in seconds)
             print('Timeout Error')
             return False, False
 
